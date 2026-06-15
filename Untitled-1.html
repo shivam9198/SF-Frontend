@@ -1,0 +1,62 @@
+import React from 'react'; import { FiTrendingUp, FiTrendingDown, FiActivity,
+FiUsers, FiBriefcase, FiDollarSign } from 'react-icons/fi'; const KpiCard = ({
+title, value, growth, prefix = '', suffix = '', icon: Icon }) => (
+<div
+  className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-soft dark:border-slate-700/80 dark:bg-slate-900"
+>
+  <div className="flex items-center justify-between">
+    <div>
+      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+        {title}
+      </p>
+      <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
+        {prefix}{value}{suffix}
+      </p>
+    </div>
+    <div
+      className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-400"
+    >
+      <Icon size="{24}" />
+    </div>
+  </div>
+  {growth !== undefined && (
+  <div className="mt-4 flex items-center gap-2 text-sm">
+    <span className="{`flex" items-center gap-1 font-medium ${growth
+      >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600
+      dark:text-red-400'}`}> {growth >= 0 ? <FiTrendingUp /> :
+      <FiTrendingDown />} {Math.abs(growth)}%
+    </span>
+    <span className="text-slate-500 dark:text-slate-400">vs last period</span>
+  </div>
+  )}
+</div>
+); const KpiSection = ({ data }) => { return (
+<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+  <KpiCard
+    title="Total Collection"
+    value="{data.totalCollection.toLocaleString()}"
+    prefix="₹"
+    growth="{data.totalCollectionGrowth}"
+    icon="{FiDollarSign}"
+  />
+  <KpiCard
+    title="Active Loans"
+    value="{data.activeLoans}"
+    growth="{data.activeLoansGrowth}"
+    icon="{FiBriefcase}"
+  />
+  <KpiCard
+    title="Collection Rate"
+    value="{data.collectionRate}"
+    suffix="%"
+    icon="{FiActivity}"
+  />
+  <KpiCard
+    title="Outstanding Amount"
+    value="{data.outstandingAmount.toLocaleString()}"
+    prefix="₹"
+    growth="{data.outstandingAmountGrowth}"
+    icon="{FiTrendingUp}"
+  />
+</div>
+); }; export default KpiSection;
