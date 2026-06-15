@@ -53,8 +53,63 @@ const CustomersPage = () => {
     const fetchCustomers = async () => {
         try {
             setIsLoading(true);
-            const response = await api.get('/customers');
-            setCustomers(response.data);
+            const [customersRes, loansRes] = await Promise.all([
+                api.get('/customers'),
+                api.get('/loans').catch(() => ({ data: [] }))
+            ]);
+            
+            const rawCustomers = customersRes.data || [];
+            const rawLoans = loansRes.data?.loans || loansRes.data || [];
+            
+            const processedCustomers = rawCustomers.map(customer => {
+                const customerLoans = rawLoans.filter(loan => {
+                    const loanCustId = loan.customer?._id || loan.customer?.id || (typeof loan.customerId === 'string' ? loan.customerId : loan.customerId?._id);
+                    return loanCustId === customer._id;
+                });
+                
+                const loanCount = customerLoans.length;
+                let totalOutstanding = 0;
+                let hasActiveLoans = false;
+                let hasOverdue = false;
+                
+                customerLoans.forEach(loan => {
+                    const paid = loan.paidEmis || 0;
+                    const outstanding = loan.outstandingBalance ?? ((loan.loanAmount || 0) - (paid * (loan.monthlyEmi || 0)));
+                    
+                    if (outstanding > 0) {
+                        totalOutstanding += outstanding;
+                        hasActiveLoans = true;
+                    }
+                    
+                    if (loan.status === 'Overdue' || loan.hasOverdue || (loan.overdueAmount && loan.overdueAmount > 0) || (loan.schedule && loan.schedule.some(e => e.status === 'Overdue'))) {
+                        hasOverdue = true;
+                    }
+                });
+                
+                let status = 'New';
+                if (loanCount > 0) {
+                    if (hasOverdue) {
+                        status = 'Overdue';
+                    } else if (hasActiveLoans) {
+                        status = 'Active';
+                    } else {
+                        status = 'Completed';
+                    }
+                }
+                
+                return {
+                    ...customer,
+                    loans: loanCount,
+                    totalOutstanding,
+                    status
+                };
+            });
+            
+            console.log("Customers", rawCustomers);
+            console.log("Loans", rawLoans);
+            console.log("Matched Customers", processedCustomers);
+
+            setCustomers(processedCustomers);
             setError(null);
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'Failed to fetch customers');

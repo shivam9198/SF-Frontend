@@ -65,13 +65,65 @@ const RecordPaymentPage = () => {
                 setIsSearching(true);
                 setShowResults(true);
                 try {
-                    const allCustomers = await customerService.getCustomers();
-                    const filtered = allCustomers.filter(c =>
-                        c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-                        c.phone.includes(customerSearch) ||
-                        c.id.toLowerCase().includes(customerSearch.toLowerCase())
-                    );
-                    setSearchResults(filtered);
+                    const loansResponse = await api.get('/loans');
+                    const loansData = loansResponse.data?.loans || loansResponse.data?.data || loansResponse.data;
+                    const loansList = Array.isArray(loansData) ? loansData : [];
+
+                    const term = customerSearch.toLowerCase();
+                    const resultsMap = new Map();
+
+                    for (const loan of loansList) {
+                        let customerObj = loan.customer;
+                        if (!customerObj && loan.customerId && typeof loan.customerId === 'object') {
+                            customerObj = loan.customerId;
+                        }
+                        
+                        const cName = customerObj?.fullName || customerObj?.name || loan.customerName || 'Unknown';
+                        const cPhone = customerObj?.phone || loan.phone || '';
+                        const cId = customerObj?._id || customerObj?.id || (typeof loan.customerId === 'string' ? loan.customerId : '');
+                        const displayCId = cId ? `CUS-${String(cId).slice(-6).toUpperCase()}` : '';
+                        
+                        const lId = loan._id || loan.id || '';
+                        const displayLoanId = `LOAN-${String(lId).slice(-6).toUpperCase()}`;
+
+                        let matches = false;
+                        if (cName.toLowerCase().includes(term) ||
+                            cPhone.includes(term) ||
+                            String(cId).toLowerCase().includes(term) ||
+                            displayCId.toLowerCase().includes(term) ||
+                            String(lId).toLowerCase().includes(term) ||
+                            displayLoanId.toLowerCase().includes(term)) {
+                            matches = true;
+                        }
+
+                        // Search by EMI Number if term is a number
+                        if (!matches && !isNaN(term)) {
+                            try {
+                                const res = await api.get(`/loans/${lId}/installments`);
+                                const data = res.data?.data || res.data;
+                                const insts = Array.isArray(data) ? data : (data?.installments || []);
+                                if (insts.some(i => String(i.emiNumber) === term)) {
+                                    matches = true;
+                                }
+                            } catch (e) {
+                                // ignore
+                            }
+                        }
+
+                        if (matches && cId) {
+                            if (!resultsMap.has(String(cId))) {
+                                resultsMap.set(String(cId), {
+                                    id: cId,
+                                    name: cName,
+                                    phone: cPhone,
+                                    displayCId,
+                                    matchedLoanId: displayLoanId
+                                });
+                            }
+                        }
+                    }
+
+                    setSearchResults(Array.from(resultsMap.values()));
                 } catch (err) {
                     console.error('Search failed', err);
                 } finally {
@@ -82,7 +134,7 @@ const RecordPaymentPage = () => {
             }
         };
 
-        const timer = setTimeout(search, 300);
+        const timer = setTimeout(search, 500); // 500ms debounce
         return () => clearTimeout(timer);
     }, [customerSearch, selectedCustomer]);
 
@@ -92,8 +144,15 @@ const RecordPaymentPage = () => {
             if (selectedCustomer) {
                 setIsLoadingLoans(true);
                 try {
-                    const allLoans = await loanService.getAllLoans();
-                    const cLoans = allLoans.filter(l => l.customerId === selectedCustomer.id);
+                    const loansResponse = await api.get('/loans');
+                    const loansData = loansResponse.data?.loans || loansResponse.data?.data || loansResponse.data;
+                    const allLoans = Array.isArray(loansData) ? loansData : [];
+                    
+                    const cLoans = allLoans.filter(l => {
+                        const lCid = l.customer?._id || l.customer?.id || (typeof l.customerId === 'string' ? l.customerId : l.customerId?._id);
+                        return String(lCid) === String(selectedCustomer.id);
+                    });
+                    
                     setCustomerLoans(cLoans);
 
                     // Auto-select if only 1 loan

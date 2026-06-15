@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiEdit2, FiPhone, FiMapPin, FiFileText, FiBriefcase, FiCreditCard, FiClock, FiActivity, FiSave, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit2, FiPhone, FiMapPin, FiFileText, FiSave, FiCheckCircle, FiXCircle, FiCalendar } from 'react-icons/fi';
 import Button from '../../components/common/Button';
-import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
-import Table from '../../components/common/Table';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import api from '../../services/api/axios';
-
-const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount || 0);
 
 const formatId = (id) => {
     if (!id) return '';
@@ -42,7 +38,11 @@ const CustomerDetailsPage = () => {
                 setCustomer(response.data.customer || response.data);
                 setError(null);
             } catch (err) {
-                setError(err.response?.data?.message || err.message || 'Failed to load customer');
+                if (err.response && err.response.status === 404) {
+                    setError('Customer not found');
+                } else {
+                    setError(err.response?.data?.message || err.message || 'Failed to load customer');
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -61,20 +61,7 @@ const CustomerDetailsPage = () => {
         return <ErrorState message={error} onRetry={() => window.location.reload()} />;
     }
 
-    if (!customer) return null;
-
-    const mockPayments = [
-        { date: '2024-03-01', amount: 5000, status: 'Paid', method: 'UPI' },
-        { date: '2024-02-01', amount: 5000, status: 'Paid', method: 'Bank Transfer' },
-        { date: '2024-01-01', amount: 5000, status: 'Late', method: 'Cash' },
-    ];
-
-    const mockTimeline = [
-        { date: '2024-03-05', action: 'Called customer regarding upcoming EMI.', user: 'Agent Amit' },
-        { date: '2024-03-01', action: 'EMI Payment of ₹5,000 received via UPI.', user: 'System' },
-        { date: '2024-02-15', action: 'Customer updated alternate phone number.', user: 'Agent Priya' },
-        { date: customer.createdAt, action: 'Customer profile created and KYC verified.', user: 'System' },
-    ];
+    if (!customer) return <ErrorState message="Customer not found" onRetry={() => navigate('/customers')} />;
 
     const startEditing = () => {
         setFormData({
@@ -86,7 +73,7 @@ const CustomerDetailsPage = () => {
             city: customer.address?.city || '',
             state: customer.address?.state || '',
             pincode: customer.address?.pincode || '',
-            kycDocumentType: customer.kycDocumentType || 'Aadhaar'
+            kycDocumentType: customer.kycDocumentType || ''
         });
         setIsEditing(true);
     };
@@ -124,7 +111,7 @@ const CustomerDetailsPage = () => {
                 },
                 kycDocumentType: formData.kycDocumentType
             };
-            const res = await api.put(`/customers/${id}`, payload);
+            const res = await api.put(`/customers/${customer._id}`, payload);
             setCustomer(res.data.customer || res.data);
             setIsEditing(false);
             showToast('success', 'Customer updated successfully');
@@ -149,9 +136,6 @@ const CustomerDetailsPage = () => {
                     <div>
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">{customer.fullName}</h1>
-                            <Badge variant={customer.status === 'Active' ? 'success' : customer.status === 'Overdue' ? 'warning' : 'primary'}>
-                                {customer.status || 'New'}
-                            </Badge>
                         </div>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                             Customer ID: <span className="font-medium text-slate-700 dark:text-slate-300">{formatId(customer._id)}</span>
@@ -200,16 +184,15 @@ const CustomerDetailsPage = () => {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    {/* Left Column: Info Cards */}
-                    <div className="space-y-6 lg:col-span-1">
-
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    {/* Left Column: Contact & Location Info */}
+                    <div className="space-y-6">
                         {/* Contact Info */}
                         <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
                             <h2 className="mb-4 flex items-center gap-2 text-lg font-medium text-slate-900 dark:text-white">
                                 <FiPhone className="text-sky-500" /> Contact Details
                             </h2>
-                            <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">Primary Phone</p>
                                     <p className="font-medium text-slate-900 dark:text-white">{customer.phone}</p>
@@ -220,19 +203,22 @@ const CustomerDetailsPage = () => {
                                         <p className="font-medium text-slate-900 dark:text-white">{customer.alternatePhone}</p>
                                     </div>
                                 )}
-                                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Address</p>
-                                    <p className="font-medium text-slate-900 dark:text-white flex items-start gap-2 mt-1">
-                                        <FiMapPin className="mt-1 text-slate-400 shrink-0" />
-                                        <span>
-                                            {customer.address?.street ? `${customer.address.street}, ` : ''}
-                                            {customer.address?.city}, {customer.address?.state} - {customer.address?.pincode}
-                                        </span>
-                                    </p>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Full Address</p>
+                                <div className="font-medium text-slate-900 dark:text-white flex items-start gap-2 mt-1">
+                                    <FiMapPin className="mt-1 text-slate-400 shrink-0" />
+                                    <span>
+                                        {customer.address?.street ? `${customer.address.street}, ` : ''}
+                                        {customer.address?.city}, {customer.address?.state} - {customer.address?.pincode}
+                                    </span>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
+                    {/* Right Column: KYC & System Info */}
+                    <div className="space-y-6">
                         {/* KYC Info */}
                         <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
                             <h2 className="mb-4 flex items-center gap-2 text-lg font-medium text-slate-900 dark:text-white">
@@ -241,7 +227,7 @@ const CustomerDetailsPage = () => {
                             <div className="space-y-4">
                                 <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">Document Type</p>
-                                    <p className="font-medium text-slate-900 dark:text-white">{customer.kycDocumentType || 'Aadhaar'}</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{customer.kycDocumentType}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">Document Number</p>
@@ -257,70 +243,26 @@ const CustomerDetailsPage = () => {
                             </div>
                         </div>
 
-                    </div>
-
-                    {/* Right Column: Loans & Activity */}
-                    <div className="space-y-6 lg:col-span-2">
-
-                        {/* Loan Summary Grid */}
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                            <SummaryCard title="Total Loans" value={customer.loans} icon={<FiBriefcase />} color="sky" />
-                            <SummaryCard title="Active Loans" value={customer.loans > 0 ? 1 : 0} icon={<FiActivity />} color="emerald" />
-                            <SummaryCard title="Outstanding" value={formatCurrency(customer.totalOutstanding)} icon={<FiCreditCard />} color="amber" />
-                            <SummaryCard title="Collection Rate" value="95%" icon={<FiFileText />} color="purple" />
-                        </div>
-
-                        {/* Recent Payments */}
+                        {/* System Info */}
                         <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
-                            <div className="mb-4 flex items-center justify-between">
-                                <h2 className="text-lg font-medium text-slate-900 dark:text-white">Recent Payments</h2>
-                                <Button variant="ghost" className="text-sm">View All</Button>
-                            </div>
-                            <Table
-                                columns={[
-                                    { key: 'date', label: 'Date', render: (r) => new Date(r.date).toLocaleDateString() },
-                                    { key: 'amount', label: 'Amount', render: (r) => <span className="font-medium">{formatCurrency(r.amount)}</span> },
-                                    { key: 'method', label: 'Method' },
-                                    {
-                                        key: 'status',
-                                        label: 'Status',
-                                        render: (r) => (
-                                            <Badge variant={r.status === 'Paid' ? 'success' : 'warning'}>{r.status}</Badge>
-                                        )
-                                    }
-                                ]}
-                                data={mockPayments}
-                            />
-                        </div>
-
-                        {/* Timeline Activity */}
-                        <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
-                            <h2 className="mb-6 flex items-center gap-2 text-lg font-medium text-slate-900 dark:text-white">
-                                <FiClock className="text-purple-500" /> Timeline Activity
+                            <h2 className="mb-4 flex items-center gap-2 text-lg font-medium text-slate-900 dark:text-white">
+                                <FiCalendar className="text-purple-500" /> System Information
                             </h2>
-                            <div className="space-y-6">
-                                {mockTimeline.map((item, index) => (
-                                    <div key={index} className="flex gap-4 relative">
-                                        {/* Timeline Line */}
-                                        {index !== mockTimeline.length - 1 && (
-                                            <div className="absolute left-[11px] top-6 bottom-[-24px] w-0.5 bg-slate-200 dark:bg-slate-700"></div>
-                                        )}
-                                        <div className="relative mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 ring-4 ring-white dark:bg-slate-800 dark:ring-slate-900">
-                                            <div className="h-2 w-2 rounded-full bg-slate-400 dark:bg-slate-500"></div>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-900 dark:text-white">{item.action}</p>
-                                            <div className="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                                <span>{new Date(item.date).toLocaleDateString()}</span>
-                                                <span>•</span>
-                                                <span>{item.user}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Created Date</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">
+                                        {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Last Updated</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">
+                                        {customer.updatedAt ? new Date(customer.updatedAt).toLocaleDateString() : 'N/A'}
+                                    </p>
+                                </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
             )}
@@ -335,26 +277,5 @@ const CustomerDetailsPage = () => {
         </div>
     );
 };
-
-function SummaryCard({ title, value, icon, color }) {
-    const colors = {
-        sky: 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
-        emerald: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
-        amber: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-        purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-    };
-
-    return (
-        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-700/90 dark:bg-slate-900">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${colors[color]}`}>
-                {React.cloneElement(icon, { size: 20 })}
-            </div>
-            <div>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{title}</p>
-                <h3 className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{value}</h3>
-            </div>
-        </div>
-    );
-}
 
 export default CustomerDetailsPage;

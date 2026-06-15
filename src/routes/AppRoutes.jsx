@@ -10,6 +10,7 @@ const AddCustomerPage = lazy(() => import('../pages/Customers/AddCustomer'))
 const LoansPage = lazy(() => import('../pages/Loans/Loans'))
 const LoanDetailsPage = lazy(() => import('../pages/Loans/LoanDetails'))
 const AddLoanPage = lazy(() => import('../pages/Loans/AddLoan'))
+const LoanEmiSchedulePage = lazy(() => import('../pages/Loans/EmiSchedule'))
 const EmiSchedulePage = lazy(() => import('../pages/Payments/EmiSchedule'))
 const PaymentsPage = lazy(() => import('../pages/Payments/Payments'))
 const RecordPaymentPage = lazy(() => import('../pages/Payments/RecordPayment'))
@@ -37,7 +38,7 @@ function AppRoutes() {
                 <Route path="/loans" element={<ProtectedRoute><LoansPage /></ProtectedRoute>} />
                 <Route path="/loans/new" element={<ProtectedRoute><AddLoanPage /></ProtectedRoute>} />
                 <Route path="/loans/:loanId" element={<ProtectedRoute><LoanDetailsPage /></ProtectedRoute>} />
-                <Route path="/loans/:loanId/emi-schedule" element={<ProtectedRoute><EmiSchedulePage /></ProtectedRoute>} />
+                <Route path="/loans/:loanId/emi-schedule" element={<ProtectedRoute><LoanEmiSchedulePage /></ProtectedRoute>} />
                 <Route path="/emi-schedule" element={<ProtectedRoute><EmiSchedulePage /></ProtectedRoute>} />
                 <Route path="/payments" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
                 <Route path="/payments/new" element={<ProtectedRoute><RecordPaymentPage /></ProtectedRoute>} />

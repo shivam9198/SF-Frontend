@@ -9,12 +9,13 @@ import Table from '../../components/common/Table';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import EmptyState from '../../components/common/EmptyState';
-import { loanService } from '../../services/api/loanService';
+import api from '../../services/api/axios';
 import EmiCalendar from './components/EmiCalendar';
 import { formatCurrency } from '../../utils/format';
 
 const EmiSchedulePage = () => {
-    const { loanId } = useParams();
+    const params = useParams();
+    const { loanId } = params;
     const navigate = useNavigate();
     
     const [loan, setLoan] = useState(null);
@@ -31,23 +32,86 @@ const EmiSchedulePage = () => {
 
     useEffect(() => {
         const fetchSchedule = async () => {
+            console.log("Route Params:", params);
+            console.log("Loan ID:", loanId);
+
             try {
                 setIsLoading(true);
+                let installmentsArray = [];
+
                 if (loanId) {
-                    const [loanData, scheduleData] = await Promise.all([
-                        loanService.getLoanDetails(loanId),
-                        loanService.getEmiSchedule(loanId)
+                    const apiUrl = `/loans/${loanId}/installments`;
+                    const loanUrl = `/loans/${loanId}`;
+                    console.log("Calling API URL:", apiUrl);
+                    
+                    const [installmentsRes, loanRes] = await Promise.all([
+                        api.get(apiUrl),
+                        api.get(loanUrl)
                     ]);
-                    setLoan(loanData);
-                    setSchedule(scheduleData);
+                    
+                    const resData = installmentsRes.data?.data || installmentsRes.data;
+                    
+                    if (resData && Array.isArray(resData.installments)) {
+                        installmentsArray = resData.installments;
+                    } else if (Array.isArray(resData)) {
+                        installmentsArray = resData;
+                    } else if (resData && typeof resData === 'object') {
+                        const arrayProp = Object.values(resData).find(val => Array.isArray(val));
+                        if (arrayProp) installmentsArray = arrayProp;
+                    }
+
+                    const loanData = loanRes.data?.data?.loan || loanRes.data?.loan || loanRes.data?.data || loanRes.data;
+                    
+                    setLoan({ 
+                        id: loanId, 
+                        customerName: loanData?.customer?.fullName || loanData?.customerName || 'Customer',
+                        emiPlan: loanData?.emiPlan || loanData?.months,
+                        monthlyEmi: loanData?.monthlyEmi
+                    });
                 } else {
-                    const allSchedules = await loanService.getAllSchedules();
+                    console.log("Fetching all loans to aggregate global EMI schedule");
+                    const loansResponse = await api.get('/loans');
+                    const loansData = loansResponse.data?.loans || loansResponse.data?.data || loansResponse.data;
+                    const loansList = Array.isArray(loansData) ? loansData : [];
+
+                    const promises = loansList.map(async (loan) => {
+                        try {
+                            const id = loan._id || loan.id;
+                            const res = await api.get(`/loans/${id}/installments`);
+                            const data = res.data?.data || res.data;
+                            const insts = Array.isArray(data) ? data : (data?.installments || []);
+                            
+                            let customerObj = loan.customer;
+                            if (!customerObj && loan.customerId && typeof loan.customerId === 'object') {
+                                customerObj = loan.customerId;
+                            }
+                            const cName = customerObj?.fullName || customerObj?.name || loan.customerName || 'Unknown';
+                            const displayLoanId = loan._id ? `LOAN-${String(loan._id).slice(-6).toUpperCase()}` : (loan.id || id);
+
+                            return insts.map(inst => ({
+                                ...inst,
+                                loanId: displayLoanId,
+                                rawLoanId: id,
+                                customerName: cName
+                            }));
+                        } catch (e) {
+                            console.error(`Failed to fetch installments for loan ${loan._id || loan.id}`, e);
+                            return [];
+                        }
+                    });
+
+                    const results = await Promise.all(promises);
+                    installmentsArray = results.flat();
+                    
                     setLoan(null);
-                    setSchedule(allSchedules);
                 }
+                
+                console.log("Installments", installmentsArray);
+                setSchedule(installmentsArray.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate) || (a.emiNumber || 0) - (b.emiNumber || 0)));
                 setError(null);
             } catch (err) {
-                setError(err.message || 'Failed to fetch EMI schedule');
+                console.error("API Error:", err);
+                setError(err.response?.data?.message || err.message || 'Unable to load data');
             } finally {
                 setIsLoading(false);
             }
@@ -64,7 +128,7 @@ const EmiSchedulePage = () => {
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
             result = result.filter(e => 
-                e.emiNumber.toString().includes(term) || 
+                e.emiNumber?.toString().includes(term) || 
                 (e.customerName && e.customerName.toLowerCase().includes(term)) ||
                 (e.loanId && e.loanId.toLowerCase().includes(term))
             );
@@ -113,12 +177,6 @@ const EmiSchedulePage = () => {
             key: 'status', 
             label: 'Status', 
             render: (r) => {
-                const variants = {
-                    Paid: 'success',
-                    Pending: 'warning',
-                    Overdue: 'danger' // Requires danger variant in Badge, mapping to red
-                };
-                // Fallback to red text if danger badge isn't perfectly supported in Badge.jsx
                 const colorMap = {
                     Paid: 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-200',
                     Pending: 'text-amber-700 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-200',
@@ -132,7 +190,7 @@ const EmiSchedulePage = () => {
             }
         },
         { key: 'paidDate', label: 'Paid Date', render: (r) => r.paidDate ? new Date(r.paidDate).toLocaleDateString() : '-' },
-        { key: 'collectedBy', label: 'Collected By' },
+        { key: 'collectedBy', label: 'Collected By', render: (r) => r.collectedBy || '-' },
         {
             key: 'actions',
             label: 'Actions',
@@ -169,10 +227,10 @@ const EmiSchedulePage = () => {
                     </button>
                     <div>
                         <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-                            {loan ? 'EMI Schedule' : 'Global EMI Schedule'}
+                            {loanId ? 'EMI Schedule' : 'Global EMI Schedule'}
                         </h1>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            {loan ? `${loan.customerName} • Loan ID: ${loan.id}` : 'Viewing all EMI schedules across all loans.'}
+                            {loanId ? `Loan ID: ${loanId.slice(-6).toUpperCase()}` : 'Viewing all EMI schedules across all loans.'}
                         </p>
                     </div>
                 </div>
@@ -261,7 +319,7 @@ const EmiSchedulePage = () => {
                                         Overdue: 'text-red-700 bg-red-100 dark:bg-red-900/40 dark:text-red-200'
                                     };
                                     return (
-                                        <div key={emi.emiNumber} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+                                        <div key={emi.emiNumber || Math.random()} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
                                             <div className="flex justify-between items-start mb-3">
                                                 <div>
                                                     <h3 className="font-semibold text-slate-900 dark:text-white">EMI #{emi.emiNumber}</h3>

@@ -8,7 +8,7 @@ import Table from '../../components/common/Table';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import EmptyState from '../../components/common/EmptyState';
-import { paymentService } from '../../services/api/paymentService';
+import api from '../../services/api/axios';
 import { formatCurrency } from '../../utils/format';
 
 const PaymentsPage = () => {
@@ -26,11 +26,47 @@ const PaymentsPage = () => {
         const fetchPayments = async () => {
             try {
                 setIsLoading(true);
-                const data = await paymentService.getPayments();
-                setPayments(data);
+                const loansResponse = await api.get('/loans');
+                const loansData = loansResponse.data?.loans || loansResponse.data?.data || loansResponse.data;
+                const loansList = Array.isArray(loansData) ? loansData : [];
+
+                const promises = loansList.map(async (loan) => {
+                    try {
+                        const id = loan._id || loan.id;
+                        const res = await api.get(`/loans/${id}/installments`);
+                        const data = res.data?.data || res.data;
+                        const insts = Array.isArray(data) ? data : (data?.installments || []);
+                        
+                        let customerObj = loan.customer;
+                        if (!customerObj && loan.customerId && typeof loan.customerId === 'object') {
+                            customerObj = loan.customerId;
+                        }
+                        const cName = customerObj?.fullName || customerObj?.name || loan.customerName || 'Unknown';
+                        const cPhone = customerObj?.phone || loan.phone || 'N/A';
+                        const displayLoanId = loan._id ? `LOAN-${String(loan._id).slice(-6).toUpperCase()}` : (loan.id || id);
+
+                        // Only return paid installments as 'payments'
+                        return insts.filter(inst => inst.status === 'Paid').map(inst => ({
+                            ...inst,
+                            id: inst._id || inst.id || `PAY-${Math.random().toString(36).substr(2, 9)}`,
+                            loanId: displayLoanId,
+                            rawLoanId: id,
+                            customerName: cName,
+                            customerPhone: cPhone,
+                            paymentMethod: inst.paymentMode || inst.paymentMethod || 'Cash', // default
+                        }));
+                    } catch (e) {
+                        console.error(`Failed to fetch installments for loan ${loan._id || loan.id}`, e);
+                        return [];
+                    }
+                });
+
+                const results = await Promise.all(promises);
+                const paidInstallments = results.flat().sort((a, b) => new Date(b.paidDate) - new Date(a.paidDate));
+                setPayments(paidInstallments);
                 setError(null);
             } catch (err) {
-                setError(err.message || 'Failed to fetch payments');
+                setError(err.response?.data?.message || err.message || 'Failed to fetch payments');
             } finally {
                 setIsLoading(false);
             }
