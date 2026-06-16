@@ -11,7 +11,7 @@ import { formatCurrency, formatDate } from '../../utils/format';
 
 const OverduePage = () => {
     const navigate = useNavigate();
-    
+
     const [accounts, setAccounts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -39,7 +39,7 @@ const OverduePage = () => {
 
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            result = result.filter(a => 
+            result = result.filter(a =>
                 (a.customerName && a.customerName.toLowerCase().includes(term)) ||
                 (a.phone && a.phone.includes(term)) ||
                 (a.loanId && a.loanId.toLowerCase().includes(term)) ||
@@ -99,27 +99,37 @@ const OverduePage = () => {
     };
 
     const columns = [
-        { key: 'customerName', label: 'Customer Name', render: (r) => (
-            <div>
-                <p className="text-base font-semibold text-slate-900 dark:text-white">{r.customerName}</p>
-                <p className="text-sm text-slate-500">{r.loanId} • EMI {r.emiNumber}</p>
-            </div>
-        )},
-        { key: 'phone', label: 'Phone Number', render: (r) => (
-            <a href={`tel:${r.phone}`} className="text-base font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400">
-                {r.phone}
-            </a>
-        )},
-        { key: 'amount', label: 'EMI Amount', render: (r) => (
-            <span className="text-base font-semibold text-slate-900 dark:text-white">{formatCurrency(r.amount)}</span>
-        )},
+        {
+            key: 'customerName', label: 'Customer Name', render: (r) => (
+                <div>
+                    <p className="text-base font-semibold text-slate-900 dark:text-white">{r.customerName}</p>
+                    <p className="text-sm text-slate-500">{r.loanId} • EMI {r.emiNumber}</p>
+                </div>
+            )
+        },
+        {
+            key: 'phone', label: 'Phone Number', render: (r) => (
+                <a href={`tel:${r.phone}`} className="text-base font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400">
+                    {r.phone}
+                </a>
+            )
+        },
+        {
+            key: 'amount', label: 'EMI Amount', render: (r) => (
+                <span className="text-base font-semibold text-slate-900 dark:text-white">{formatCurrency(r.amount)}</span>
+            )
+        },
         { key: 'dueDate', label: 'Due Date', render: (r) => formatDate(r.dueDate) },
-        { key: 'daysOverdue', label: 'Days Late', render: (r) => (
-            <span className="rounded-full bg-red-50 px-3 py-1 text-sm font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300">{r.daysOverdue} days</span>
-        )},
-        { key: 'outstandingAmount', label: 'Outstanding Amount', render: (r) => (
-            <span className="text-base font-bold text-red-600 dark:text-red-400">{formatCurrency(r.outstandingAmount || r.amount)}</span>
-        )},
+        {
+            key: 'daysOverdue', label: 'Days Late', render: (r) => (
+                <span className="rounded-full bg-red-50 px-3 py-1 text-sm font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300">{r.daysOverdue} days</span>
+            )
+        },
+        {
+            key: 'outstandingAmount', label: 'Outstanding Amount', render: (r) => (
+                <span className="text-base font-bold text-red-600 dark:text-red-400">{formatCurrency(r.outstandingAmount || r.amount)}</span>
+            )
+        },
         {
             key: 'actions',
             label: 'Actions',
@@ -163,7 +173,7 @@ const OverduePage = () => {
 
             {/* Main Content */}
             <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
-                
+
                 {/* Search & Filters */}
                 <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="relative w-full md:max-w-lg">
@@ -187,8 +197,8 @@ const OverduePage = () => {
 
                 {/* Table */}
                 {filteredAccounts.length === 0 ? (
-                    <EmptyState 
-                        title="No overdue EMI found" 
+                    <EmptyState
+                        title="No overdue EMI found"
                         description={searchTerm ? "Try another customer name, phone number or loan number." : "All EMI payments are up to date."}
                         action={searchTerm ? <Button onClick={handleClearFilters}>Clear Search</Button> : null}
                     />
@@ -197,7 +207,7 @@ const OverduePage = () => {
                         <div className="hidden md:block">
                             <Table columns={columns} data={filteredAccounts} />
                         </div>
-                        
+
                         {/* Mobile Cards */}
                         <div className="grid grid-cols-1 gap-4 md:hidden">
                             {filteredAccounts.map(acc => (

@@ -11,6 +11,13 @@ import Table from '../../components/common/Table';
 import { staffService } from '../../services/api/staffService';
 import StaffSkeleton from './components/StaffSkeleton';
 
+export const getDisplayId = (id) => id ? 'STF-' + id.substring(id.length - 6).toUpperCase() : '';
+
+export const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
+};
+
 function StaffPage() {
     const navigate = useNavigate();
     const [staff, setStaff] = useState([]);
@@ -26,7 +33,7 @@ function StaffPage() {
             setStaff(data);
             setError(null);
         } catch (err) {
-            setError(err.message || 'Failed to load staff');
+            setError(err.response?.data?.message || err.message || 'Failed to load staff');
         } finally {
             setIsLoading(false);
         }
@@ -38,51 +45,59 @@ function StaffPage() {
 
     const summary = useMemo(() => ({
         total: staff.length,
-        active: staff.filter((member) => member.status === 'Active').length,
-        admins: staff.filter((member) => member.role === 'Admin').length,
-        members: staff.filter((member) => member.role === 'Staff').length,
+        active: staff.filter((member) => member.isActive).length,
+        admins: staff.filter((member) => member.role === 'admin').length,
+        members: staff.filter((member) => member.role === 'staff').length,
     }), [staff]);
 
     const filteredStaff = useMemo(() => {
         return staff.filter((member) => {
             const search = searchTerm.trim().toLowerCase();
             const matchesSearch = !search ||
-                member.name.toLowerCase().includes(search) ||
-                member.phone.includes(searchTerm.trim());
+                (member.name && member.name.toLowerCase().includes(search)) ||
+                (member.phone && member.phone.includes(searchTerm.trim())) ||
+                (member.email && member.email.toLowerCase().includes(search)) ||
+                (member.role && member.role.toLowerCase().includes(search));
 
-            const matchesFilter = filter === 'All' || member.role === filter || member.status === filter;
+            let matchesFilter = true;
+            if (filter === 'Admin') matchesFilter = member.role === 'admin';
+            else if (filter === 'Staff') matchesFilter = member.role === 'staff';
+            else if (filter === 'Active') matchesFilter = member.isActive === true;
+            else if (filter === 'Inactive') matchesFilter = member.isActive === false;
+
             return matchesSearch && matchesFilter;
         });
     }, [staff, searchTerm, filter]);
 
-    const handleToggleStatus = async (id) => {
+    const handleToggleStatus = async (id, isActive) => {
         try {
-            const updated = await staffService.toggleStaffStatus(id);
-            setStaff((current) => current.map((member) => member.id === id ? updated : member));
+            const newStatus = isActive ? 'inactive' : 'active';
+            await staffService.toggleStaffStatus(id, newStatus);
+            fetchStaff();
         } catch (err) {
-            setError(err.message || 'Failed to update staff status');
+            setError(err.response?.data?.message || err.message || 'Failed to update staff status');
         }
     };
 
     const columns = [
-        { key: 'id', label: 'Staff ID', render: (row) => <span className="font-semibold text-sky-600 dark:text-sky-400">{row.id}</span> },
+        { key: 'id', label: 'Staff ID', render: (row) => <span className="font-semibold text-sky-600 dark:text-sky-400">{getDisplayId(row._id)}</span> },
         { key: 'name', label: 'Name', render: (row) => <span className="font-semibold text-slate-900 dark:text-white">{row.name}</span> },
-        { key: 'phone', label: 'Phone Number' },
-        { key: 'role', label: 'Role', render: (row) => <RoleBadge role={row.role} /> },
-        { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
-        { key: 'joiningDate', label: 'Joining Date', render: (row) => new Date(row.joiningDate).toLocaleDateString('en-IN') },
+        { key: 'phone', label: 'Phone Number', render: (row) => row.phone },
+        { key: 'role', label: 'Role', render: (row) => <RoleBadge role={row.role === 'admin' ? 'Admin' : 'Staff'} /> },
+        { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.isActive ? 'Active' : 'Inactive'} /> },
+        { key: 'joiningDate', label: 'Joining Date', render: (row) => formatDate(row.createdAt) },
         {
             key: 'actions',
             label: 'Actions',
             render: (row) => (
                 <div className="flex flex-wrap items-center gap-2">
-                    <IconAction title="View" onClick={() => navigate(`/staff/${row.id}`)} icon={<FiEye />} />
-                    <IconAction title="Edit" onClick={() => navigate(`/staff/${row.id}/edit`)} icon={<FiEdit2 />} />
+                    <IconAction title="View" onClick={() => navigate(`/staff/${row._id}`)} icon={<FiEye />} />
+                    <IconAction title="Edit" onClick={() => navigate(`/staff/${row._id}/edit`)} icon={<FiEdit2 />} />
                     <IconAction
-                        title={row.status === 'Active' ? 'Deactivate' : 'Activate'}
-                        onClick={() => handleToggleStatus(row.id)}
-                        icon={row.status === 'Active' ? <FiToggleLeft /> : <FiToggleRight />}
-                        tone={row.status === 'Active' ? 'amber' : 'emerald'}
+                        title={row.isActive ? 'Deactivate' : 'Activate'}
+                        onClick={() => handleToggleStatus(row._id, row.isActive)}
+                        icon={row.isActive ? <FiToggleLeft /> : <FiToggleRight />}
+                        tone={row.isActive ? 'amber' : 'emerald'}
                     />
                 </div>
             ),
@@ -122,7 +137,7 @@ function StaffPage() {
                         <input
                             value={searchTerm}
                             onChange={(event) => setSearchTerm(event.target.value)}
-                            placeholder="Search by name or phone"
+                            placeholder="Search by name, email, phone or role"
                             className="w-full rounded-3xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-base text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                         />
                     </div>
@@ -145,7 +160,7 @@ function StaffPage() {
                 {filteredStaff.length === 0 ? (
                     <EmptyState
                         title="No Staff Found"
-                        description="Try another name, phone number or filter."
+                        description="Try another name, phone number, email, role or filter."
                         action={<Button variant="secondary" onClick={() => { setSearchTerm(''); setFilter('All'); }}>Clear Search</Button>}
                     />
                 ) : (
@@ -155,7 +170,7 @@ function StaffPage() {
                         </div>
                         <div className="grid grid-cols-1 gap-4 md:hidden">
                             {filteredStaff.map((member) => (
-                                <StaffMobileCard key={member.id} member={member} onView={() => navigate(`/staff/${member.id}`)} onEdit={() => navigate(`/staff/${member.id}/edit`)} onToggle={() => handleToggleStatus(member.id)} />
+                                <StaffMobileCard key={member._id} member={member} onView={() => navigate(`/staff/${member._id}`)} onEdit={() => navigate(`/staff/${member._id}/edit`)} onToggle={() => handleToggleStatus(member._id, member.isActive)} />
                             ))}
                         </div>
                     </>
@@ -217,21 +232,21 @@ function StaffMobileCard({ member, onView, onEdit, onToggle }) {
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <p className="text-lg font-bold text-slate-900 dark:text-white">{member.name}</p>
-                    <p className="text-sm font-semibold text-sky-600 dark:text-sky-400">{member.id}</p>
+                    <p className="text-sm font-semibold text-sky-600 dark:text-sky-400">{getDisplayId(member._id)}</p>
                 </div>
-                <StatusBadge status={member.status} />
+                <StatusBadge status={member.isActive ? 'Active' : 'Inactive'} />
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <Info label="Phone" value={member.phone} />
-                <Info label="Role" value={member.role} />
-                <Info label="Joining Date" value={new Date(member.joiningDate).toLocaleDateString('en-IN')} />
+                <Info label="Role" value={member.role === 'admin' ? 'Admin' : 'Staff'} />
+                <Info label="Joining Date" value={formatDate(member.createdAt)} />
                 <Info label="Password" value="---" />
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
                 <Button variant="secondary" className="px-3 py-2 text-xs" onClick={onView}>View</Button>
                 <Button variant="secondary" className="px-3 py-2 text-xs" onClick={onEdit}>Edit</Button>
                 <Button variant="secondary" className="px-3 py-2 text-xs" onClick={onToggle}>
-                    {member.status === 'Active' ? 'Deactivate' : 'Activate'}
+                    {member.isActive ? 'Deactivate' : 'Activate'}
                 </Button>
             </div>
         </div>

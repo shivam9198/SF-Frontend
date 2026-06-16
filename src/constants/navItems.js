@@ -7,7 +7,6 @@ import {
   MdWarning,
   MdBarChart,
   MdGroups,
-  MdSettings,
 } from "react-icons/md";
 
 export const navItems = [
@@ -19,5 +18,4 @@ export const navItems = [
   { label: "Overdue Tracker", path: "/overdue", icon: MdWarning },
   { label: "Reports", path: "/reports", icon: MdBarChart, adminOnly: true },
   { label: "Staff", path: "/staff", icon: MdGroups, adminOnly: true },
-  { label: "Settings", path: "/settings", icon: MdSettings, adminOnly: true },
 ];

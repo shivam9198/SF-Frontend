@@ -17,14 +17,14 @@ const EmiSchedulePage = () => {
     const params = useParams();
     const { loanId } = params;
     const navigate = useNavigate();
-    
+
     const [loan, setLoan] = useState(null);
     const [schedule, setSchedule] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
 
-    
+
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
@@ -43,14 +43,14 @@ const EmiSchedulePage = () => {
                     const apiUrl = `/loans/${loanId}/installments`;
                     const loanUrl = `/loans/${loanId}`;
                     console.log("Calling API URL:", apiUrl);
-                    
+
                     const [installmentsRes, loanRes] = await Promise.all([
                         api.get(apiUrl),
                         api.get(loanUrl)
                     ]);
-                    
+
                     const resData = installmentsRes.data?.data || installmentsRes.data;
-                    
+
                     if (resData && Array.isArray(resData.installments)) {
                         installmentsArray = resData.installments;
                     } else if (Array.isArray(resData)) {
@@ -61,9 +61,9 @@ const EmiSchedulePage = () => {
                     }
 
                     const loanData = loanRes.data?.data?.loan || loanRes.data?.loan || loanRes.data?.data || loanRes.data;
-                    
-                    setLoan({ 
-                        id: loanId, 
+
+                    setLoan({
+                        id: loanId,
                         customerName: loanData?.customer?.fullName || loanData?.customerName || 'Customer',
                         emiPlan: loanData?.emiPlan || loanData?.months,
                         monthlyEmi: loanData?.monthlyEmi
@@ -80,7 +80,7 @@ const EmiSchedulePage = () => {
                             const res = await api.get(`/loans/${id}/installments`);
                             const data = res.data?.data || res.data;
                             const insts = Array.isArray(data) ? data : (data?.installments || []);
-                            
+
                             let customerObj = loan.customer;
                             if (!customerObj && loan.customerId && typeof loan.customerId === 'object') {
                                 customerObj = loan.customerId;
@@ -102,10 +102,10 @@ const EmiSchedulePage = () => {
 
                     const results = await Promise.all(promises);
                     installmentsArray = results.flat();
-                    
+
                     setLoan(null);
                 }
-                
+
                 console.log("Installments", installmentsArray);
                 setSchedule(installmentsArray.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate) || (a.emiNumber || 0) - (b.emiNumber || 0)));
                 setError(null);
@@ -127,8 +127,8 @@ const EmiSchedulePage = () => {
         // Search by EMI Number or Customer/Loan ID for global
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            result = result.filter(e => 
-                e.emiNumber?.toString().includes(term) || 
+            result = result.filter(e =>
+                e.emiNumber?.toString().includes(term) ||
                 (e.customerName && e.customerName.toLowerCase().includes(term)) ||
                 (e.loanId && e.loanId.toLowerCase().includes(term))
             );
@@ -173,9 +173,9 @@ const EmiSchedulePage = () => {
         { key: 'emiNumber', label: 'EMI No.', render: (r) => <span className="font-semibold text-sky-600 dark:text-sky-400">#{r.emiNumber}</span> },
         { key: 'dueDate', label: 'Due Date', render: (r) => new Date(r.dueDate).toLocaleDateString() },
         { key: 'amount', label: 'Amount', render: (r) => formatCurrency(r.amount) },
-        { 
-            key: 'status', 
-            label: 'Status', 
+        {
+            key: 'status',
+            label: 'Status',
             render: (r) => {
                 const colorMap = {
                     Paid: 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-200',
@@ -219,7 +219,7 @@ const EmiSchedulePage = () => {
             {/* Header Section */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
-                    <button 
+                    <button
                         onClick={() => navigate(`/loans/${loanId}`)}
                         className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                     >
@@ -236,13 +236,13 @@ const EmiSchedulePage = () => {
                 </div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                     <div className="flex rounded-full border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
-                        <button 
+                        <button
                             onClick={() => setViewMode('list')}
                             className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full transition ${viewMode === 'list' ? 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
                         >
                             <FiList /> List
                         </button>
-                        <button 
+                        <button
                             onClick={() => setViewMode('calendar')}
                             className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-full transition ${viewMode === 'calendar' ? 'bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
                         >
@@ -263,15 +263,15 @@ const EmiSchedulePage = () => {
                     {/* Search & Filter Bar */}
                     <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end">
                         <div className="flex-1 max-w-sm">
-                            <Input 
-                                placeholder="Search EMI Number..." 
+                            <Input
+                                placeholder="Search EMI Number..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
-                            <Select 
-                                value={filterStatus} 
+                            <Select
+                                value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
                                 options={[
                                     { value: 'All', label: 'All Status' },
@@ -280,8 +280,8 @@ const EmiSchedulePage = () => {
                                     { value: 'Overdue', label: 'Overdue' }
                                 ]}
                             />
-                            <Select 
-                                value={dateRange} 
+                            <Select
+                                value={dateRange}
                                 onChange={(e) => setDateRange(e.target.value)}
                                 options={[
                                     { value: '', label: 'All Dates' },
@@ -299,8 +299,8 @@ const EmiSchedulePage = () => {
 
                     {/* Table Area */}
                     {filteredSchedule.length === 0 ? (
-                        <EmptyState 
-                            title="No EMI records found" 
+                        <EmptyState
+                            title="No EMI records found"
                             description="Try adjusting your filters or date range."
                             action={<Button onClick={handleClearFilters}>Clear Filters</Button>}
                         />
@@ -309,7 +309,7 @@ const EmiSchedulePage = () => {
                             <div className="hidden md:block">
                                 <Table columns={columns} data={filteredSchedule} />
                             </div>
-                            
+
                             {/* Mobile Cards View */}
                             <div className="grid grid-cols-1 gap-4 md:hidden">
                                 {filteredSchedule.map(emi => {

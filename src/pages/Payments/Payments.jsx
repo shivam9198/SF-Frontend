@@ -27,7 +27,7 @@ const PaymentsPage = () => {
         const fetchPayments = async () => {
             try {
                 setIsLoading(true);
-                
+
                 // Fetch users for collectedBy mapping
                 let fetchedUsersMap = {};
                 try {
@@ -51,7 +51,7 @@ const PaymentsPage = () => {
                         const res = await api.get(`/loans/${id}/installments`);
                         const data = res.data?.data || res.data;
                         const insts = Array.isArray(data) ? data : (data?.installments || []);
-                        
+
                         let customerObj = loan.customer;
                         if (!customerObj && loan.customerId && typeof loan.customerId === 'object') {
                             customerObj = loan.customerId;
@@ -112,13 +112,13 @@ const PaymentsPage = () => {
     const summary = useMemo(() => {
         const today = new Date().toISOString().split('T')[0];
         const currentMonth = new Date().getMonth();
-        
+
         const todayPayments = payments.filter(p => p.paymentDate && p.paymentDate.startsWith(today));
         const monthPayments = payments.filter(p => p.paymentDate && new Date(p.paymentDate).getMonth() === currentMonth);
 
         const todayTotal = todayPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
         const monthTotal = monthPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-        
+
         return {
             todayCollection: todayTotal,
             monthCollection: monthTotal,
@@ -132,7 +132,7 @@ const PaymentsPage = () => {
 
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
-            result = result.filter(p => 
+            result = result.filter(p =>
                 p.id.toLowerCase().includes(term) ||
                 p.customerName.toLowerCase().includes(term) ||
                 p.loanId.toLowerCase().includes(term)
@@ -195,22 +195,26 @@ const PaymentsPage = () => {
 
     const columns = [
         { key: 'id', label: 'Payment ID', render: (r) => <span className="font-semibold text-sky-600 dark:text-sky-400">{r.id}</span> },
-        { key: 'customer', label: 'Customer / Loan', render: (r) => (
-            <div>
-                <p className="font-medium text-slate-900 dark:text-white">{r.customerName}</p>
-                <p className="text-xs text-slate-500">{r.loanId} • EMI #{r.emiNumber}</p>
-            </div>
-        )},
+        {
+            key: 'customer', label: 'Customer / Loan', render: (r) => (
+                <div>
+                    <p className="font-medium text-slate-900 dark:text-white">{r.customerName}</p>
+                    <p className="text-xs text-slate-500">{r.loanId} • EMI #{r.emiNumber}</p>
+                </div>
+            )
+        },
         { key: 'amount', label: 'Amount', render: (r) => <span className="font-medium">{formatCurrency(r.amount)}</span> },
         { key: 'paymentDate', label: 'Date', render: (r) => formatDate(r.paymentDate) },
-        { key: 'method', label: 'Method', render: (r) => {
-            const colors = {
-                'Cash': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-                'UPI': 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-                'Bank Transfer': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-            };
-            return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${colors[r.paymentMethod] || 'bg-slate-100 text-slate-700'}`}>{r.paymentMethod}</span>;
-        }},
+        {
+            key: 'method', label: 'Method', render: (r) => {
+                const colors = {
+                    'Cash': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+                    'UPI': 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+                    'Bank Transfer': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                };
+                return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${colors[r.paymentMethod] || 'bg-slate-100 text-slate-700'}`}>{r.paymentMethod}</span>;
+            }
+        },
         { key: 'collectedBy', label: 'Collected By', render: (r) => <span className="text-sm text-slate-600 dark:text-slate-400">{r.collectedBy}</span> },
         {
             key: 'actions',
@@ -281,8 +285,8 @@ const PaymentsPage = () => {
                         />
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                        <Select 
-                            value={filterMethod} 
+                        <Select
+                            value={filterMethod}
                             onChange={(e) => setFilterMethod(e.target.value)}
                             options={[
                                 { value: 'All', label: 'All Methods' },
@@ -291,8 +295,8 @@ const PaymentsPage = () => {
                                 { value: 'Bank Transfer', label: 'Bank Transfer' }
                             ]}
                         />
-                        <Select 
-                            value={dateRange} 
+                        <Select
+                            value={dateRange}
                             onChange={(e) => setDateRange(e.target.value)}
                             options={[
                                 { value: '', label: 'All Dates' },
@@ -311,8 +315,8 @@ const PaymentsPage = () => {
 
                 {/* Table */}
                 {filteredPayments.length === 0 ? (
-                    <EmptyState 
-                        title="No payments found" 
+                    <EmptyState
+                        title="No payments found"
                         description="Try adjusting your filters or search term."
                         action={<Button onClick={handleClearFilters}>Clear Filters</Button>}
                     />
@@ -321,7 +325,7 @@ const PaymentsPage = () => {
                         <div className="hidden md:block">
                             <Table columns={columns} data={filteredPayments} />
                         </div>
-                        
+
                         {/* Mobile Cards */}
                         <div className="grid grid-cols-1 gap-4 md:hidden">
                             {filteredPayments.map(payment => (

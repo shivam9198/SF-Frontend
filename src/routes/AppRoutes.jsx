@@ -22,7 +22,6 @@ const StaffPage = lazy(() => import('../pages/Staff/Staff'))
 const AddStaffPage = lazy(() => import('../pages/Staff/AddStaff'))
 const StaffProfilePage = lazy(() => import('../pages/Staff/StaffProfile'))
 const EditStaffPage = lazy(() => import('../pages/Staff/EditStaff'))
-const SettingsPage = lazy(() => import('../pages/Settings/Settings'))
 const AccessDeniedPage = lazy(() => import('../pages/System/AccessDenied'))
 const NotFoundPage = lazy(() => import('../pages/System/NotFound'))
 
@@ -52,7 +51,6 @@ function AppRoutes() {
                 <Route path="/staff/new" element={<ProtectedRoute allowedRoles={['Admin']}><AddStaffPage /></ProtectedRoute>} />
                 <Route path="/staff/:id" element={<ProtectedRoute allowedRoles={['Admin']}><StaffProfilePage /></ProtectedRoute>} />
                 <Route path="/staff/:id/edit" element={<ProtectedRoute allowedRoles={['Admin']}><EditStaffPage /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute allowedRoles={['Admin']}><SettingsPage /></ProtectedRoute>} />
                 
                 {/* System Routes */}
                 <Route path="/access-denied" element={<AccessDeniedPage />} />

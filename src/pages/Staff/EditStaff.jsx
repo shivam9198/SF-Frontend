@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiArrowLeft, FiSave } from 'react-icons/fi';
+import { FiArrowLeft, FiSave, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import ErrorState from '../../components/common/ErrorState';
@@ -19,20 +19,30 @@ function EditStaffPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [toast, setToast] = useState(null);
+    const [originalStatus, setOriginalStatus] = useState(null);
+
+    const showToast = (type, message) => {
+        setToast({ type, message });
+        setTimeout(() => setToast(null), 3000);
+    };
 
     const fetchStaff = async () => {
         try {
             setIsLoading(true);
             const staff = await staffService.getStaffById(id);
+            const roleCap = staff.role === 'admin' ? 'Admin' : 'Staff';
+            const stat = staff.isActive ? 'Active' : 'Inactive';
             setFormData({
                 name: staff.name,
                 phone: staff.phone,
-                role: staff.role,
-                status: staff.status,
+                role: roleCap,
+                status: stat,
             });
+            setOriginalStatus(stat);
             setError('');
         } catch (err) {
-            setError(err.message || 'Failed to load staff');
+            setError(err.response?.data?.message || err.message || 'Failed to load staff');
         } finally {
             setIsLoading(false);
         }
@@ -64,10 +74,21 @@ function EditStaffPage() {
 
         try {
             setIsSubmitting(true);
-            await staffService.updateStaff(id, formData);
-            navigate(`/staff/${id}`);
+            await staffService.updateStaff(id, {
+                name: formData.name,
+                phone: formData.phone,
+                role: formData.role.toLowerCase()
+            });
+
+            if (formData.status !== originalStatus) {
+                await staffService.toggleStaffStatus(id, formData.status.toLowerCase());
+            }
+
+            showToast('success', 'Staff updated successfully');
+            setTimeout(() => navigate(`/staff`), 1500);
         } catch (err) {
-            setError(err.message || 'Failed to update staff');
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to update staff';
+            showToast('error', errorMessage);
         } finally {
             setIsSubmitting(false);
         }
@@ -79,7 +100,7 @@ function EditStaffPage() {
     return (
         <div className="space-y-6 pb-12">
             <div className="flex items-center gap-4">
-                <button type="button" onClick={() => navigate(`/staff/${id}`)} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">
+                <button type="button" onClick={() => navigate(`/staff`)} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">
                     <FiArrowLeft />
                 </button>
                 <div>
@@ -125,7 +146,7 @@ function EditStaffPage() {
                             <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">---</p>
                         </div>
                         <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 dark:border-slate-800 sm:flex-row sm:justify-end">
-                            <Button type="button" variant="secondary" onClick={() => navigate(`/staff/${id}`)}>Cancel</Button>
+                            <Button type="button" variant="secondary" onClick={() => navigate(`/staff`)}>Cancel</Button>
                             <Button type="submit" className="gap-2" disabled={isSubmitting}>
                                 <FiSave /> {isSubmitting ? 'Saving...' : 'Save Changes'}
                             </Button>
@@ -136,7 +157,7 @@ function EditStaffPage() {
                 <Card className="rounded-2xl">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">Role Permissions</h2>
                     <div className="mt-4 space-y-2">
-                        {rolePermissions[formData.role].map((permission) => (
+                        {rolePermissions[formData.role]?.map((permission) => (
                             <div key={permission} className="rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
                                 {permission}
                             </div>
@@ -144,6 +165,18 @@ function EditStaffPage() {
                     </div>
                 </Card>
             </div>
+
+            {/* Toasts */}
+            {toast && (
+                <div className={`fixed right-4 top-4 z-50 flex animate-slideIn items-center gap-3 rounded-2xl px-4 py-3 shadow-lg ${
+                    toast.type === 'success' 
+                    ? 'bg-emerald-500 text-white' 
+                    : 'bg-red-500 text-white'
+                }`}>
+                    {toast.type === 'success' ? <FiCheckCircle size={20} /> : <FiXCircle size={20} />}
+                    <p className="text-sm font-medium">{toast.message}</p>
+                </div>
+            )}
         </div>
     );
 }

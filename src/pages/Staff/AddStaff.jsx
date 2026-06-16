@@ -74,6 +74,7 @@ function AddStaffPage() {
             setFormData(initialForm);
             setError('');
             showToast('success', 'Staff registered successfully');
+            setTimeout(() => navigate('/staff'), 1500);
         } catch (err) {
             const errorMessage = err.response?.data?.message || err.message || 'Failed to add staff';
             showToast('error', errorMessage);

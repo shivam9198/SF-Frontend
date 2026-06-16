@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiArrowLeft, FiEdit2, FiPhone, FiMail, FiCalendar, FiCreditCard, FiBriefcase, FiShield, FiUser } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit2, FiPhone, FiMail, FiCalendar, FiShield, FiUser } from 'react-icons/fi';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import ErrorState from '../../components/common/ErrorState';
 import { rolePermissions, staffService } from '../../services/api/staffService';
 import ProfileSkeleton from './components/ProfileSkeleton';
+
+export const getDisplayId = (id) => id ? 'STF-' + id.substring(id.length - 6).toUpperCase() : '';
+
+export const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
+};
 
 function StaffProfilePage() {
     const { id } = useParams();
@@ -22,7 +29,7 @@ function StaffProfilePage() {
             setStaff(data);
             setError(null);
         } catch (err) {
-            setError(err.message || 'Failed to load staff profile');
+            setError(err.response?.data?.message || err.message || 'Failed to load staff profile');
         } finally {
             setIsLoading(false);
         }
@@ -36,6 +43,10 @@ function StaffProfilePage() {
     if (error) return <ErrorState message={error} onRetry={fetchStaff} />;
     if (!staff) return null;
 
+    const displayId = getDisplayId(staff._id);
+    const roleCap = staff.role === 'admin' ? 'Admin' : 'Staff';
+    const statusText = staff.isActive ? 'Active' : 'Inactive';
+
     return (
         <div className="space-y-6 pb-12">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -46,38 +57,39 @@ function StaffProfilePage() {
                     <div>
                         <div className="flex flex-wrap items-center gap-3">
                             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{staff.name}</h1>
-                            <Badge variant={staff.status === 'Active' ? 'success' : 'warning'}>{staff.status}</Badge>
+                            <Badge variant={staff.isActive ? 'success' : 'warning'}>{statusText}</Badge>
                         </div>
-                        <p className="mt-1 text-base text-slate-600 dark:text-slate-300">Staff ID: {staff.id}</p>
+                        <p className="mt-1 text-base text-slate-600 dark:text-slate-300">Staff ID: {displayId}</p>
                     </div>
                 </div>
-                <Button onClick={() => navigate(`/staff/${staff.id}/edit`)} className="gap-2">
+                <Button onClick={() => navigate(`/staff/${staff._id}/edit`)} className="gap-2">
                     <FiEdit2 /> Edit Staff
                 </Button>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <StatCard title="Payments Collected" value={staff.paymentsCollected} icon={<FiCreditCard />} tone="emerald" />
-                <StatCard title="Loans Managed" value={staff.loansManaged} icon={<FiBriefcase />} tone="sky" />
-                <StatCard title="Role" value={staff.role} icon={staff.role === 'Admin' ? <FiShield /> : <FiUser />} tone="amber" />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
+                <StatCard title="Role" value={roleCap} icon={roleCap === 'Admin' ? <FiShield /> : <FiUser />} tone="amber" />
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div className="space-y-6">
                     <Card className="rounded-2xl">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Basic Information</h2>
                         <div className="mt-5 space-y-4">
                             <Info icon={<FiPhone />} label="Phone Number" value={staff.phone} />
                             <Info icon={<FiMail />} label="Email" value={staff.email} />
-                            <Info icon={<FiCalendar />} label="Joining Date" value={new Date(staff.joiningDate).toLocaleDateString('en-IN')} />
+                            <Info icon={<FiCalendar />} label="Created Date" value={formatDate(staff.createdAt)} />
+                            <Info icon={<FiCalendar />} label="Updated Date" value={formatDate(staff.updatedAt)} />
                             <Info icon={<FiShield />} label="Password" value="---" />
                         </div>
                     </Card>
+                </div>
 
+                <div>
                     <Card className="rounded-2xl">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Role Permissions</h2>
                         <div className="mt-4 space-y-2">
-                            {rolePermissions[staff.role].map((permission) => (
+                            {rolePermissions[roleCap]?.map((permission) => (
                                 <div key={permission} className="rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
                                     {permission}
                                 </div>
@@ -85,29 +97,6 @@ function StaffProfilePage() {
                         </div>
                     </Card>
                 </div>
-
-                <Card className="rounded-2xl lg:col-span-2">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recent Activity</h2>
-                    <div className="mt-5 space-y-4">
-                        {staff.recentActivity.length > 0 ? (
-                            staff.recentActivity.map((activity) => (
-                                <div key={activity.id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <p className="text-base font-bold text-slate-900 dark:text-white">{activity.action}</p>
-                                        <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                            {new Date(activity.date).toLocaleDateString('en-IN')}
-                                        </span>
-                                    </div>
-                                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{activity.detail}</p>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500 dark:border-slate-700">
-                                No recent activity
-                            </div>
-                        )}
-                    </div>
-                </Card>
             </div>
         </div>
     );
@@ -141,7 +130,7 @@ function Info({ icon, label, value }) {
             <div className="mt-0.5 text-sky-600 dark:text-sky-300">{icon}</div>
             <div>
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
-                <p className="mt-1 break-words font-bold text-slate-900 dark:text-white">{value}</p>
+                <p className="mt-1 break-words font-bold text-slate-900 dark:text-white">{value || '---'}</p>
             </div>
         </div>
     );
