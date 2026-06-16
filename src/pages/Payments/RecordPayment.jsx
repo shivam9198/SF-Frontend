@@ -228,6 +228,7 @@ const RecordPaymentPage = () => {
     };
 
     const handleSelectEmi = (emi) => {
+        if (emi.status === 'Paid') return; // Cannot select paid
         setSelectedEmi(emi);
         setFormData(prev => ({ ...prev, amountPaid: emi.amount.toString() }));
     };
@@ -274,28 +275,47 @@ const RecordPaymentPage = () => {
 
         setIsSubmitting(true);
         try {
-            const paymentData = {
-                customerName: selectedCustomer.name,
-                loanId: selectedLoan.id,
-                emiNumber: selectedEmi.emiNumber,
-                amount: Number(formData.amountPaid),
-                paymentDate: formData.paymentDate,
-                paymentMethod: formData.paymentMethod,
+            const emiId = selectedEmi._id || selectedEmi.id;
+            if (!emiId) throw new Error("Missing Installment ID");
+
+            const payload = {
+                paymentMode: formData.paymentMethod,
+                amountPaid: Number(formData.amountPaid),
+                paidOn: formData.paymentDate,
                 referenceNumber: formData.referenceNumber,
-                notes: formData.notes,
-                collectedBy: formData.collectedBy
+                notes: formData.notes
             };
 
-            const newPayment = await paymentService.createPayment(paymentData);
+            const response = await api.patch(`/emis/${emiId}/pay`, payload);
+            let updatedEmi = response.data?.installment || response.data || {};
+            
+            // Reconstruct payment format for receipt rendering
+            const newPayment = {
+                ...updatedEmi,
+                id: `PAY-${String(emiId).slice(-6).toUpperCase()}`,
+                rawId: emiId,
+                loanId: `LOAN-${String(selectedLoan._id || selectedLoan.id).slice(-6).toUpperCase()}`,
+                rawLoanId: selectedLoan._id || selectedLoan.id,
+                customerName: selectedCustomer.name,
+                customerPhone: selectedCustomer.phone,
+                amount: Number(formData.amountPaid),
+                paymentMethod: formData.paymentMethod,
+                paymentDate: formData.paymentDate,
+                emiNumber: selectedEmi.emiNumber,
+                referenceNumber: formData.referenceNumber,
+                notes: formData.notes,
+                collectedBy: 'Current Staff'
+            };
 
             showToastMsg('success', 'Payment recorded successfully!');
 
             setTimeout(() => {
-                navigate(`/payments/${newPayment.id}`);
+                navigate(`/payments/${newPayment.id}`, { state: { payment: newPayment, autoPrint: false } });
             }, 1500);
 
         } catch (err) {
-            showToastMsg('error', err.message || 'Failed to record payment.');
+            console.error(err);
+            showToastMsg('error', err.response?.data?.message || err.message || 'Failed to record payment.');
             setIsSubmitting(false);
         }
     };
@@ -315,12 +335,13 @@ const RecordPaymentPage = () => {
     };
 
     // Live Summary Calculations
-    const remainingBalance = selectedLoan
-        ? Math.max(0, selectedLoan.outstandingBalance - Number(formData.amountPaid || 0))
-        : 0;
+    const calculatedOutstanding = useMemo(() => {
+        return emiSchedule
+            .filter(e => e.status === 'Pending' || e.status === 'Overdue')
+            .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    }, [emiSchedule]);
 
-    // Filter to only pending or overdue
-    const activeEmis = emiSchedule.filter(e => e.status !== 'Paid');
+    const remainingBalance = Math.max(0, calculatedOutstanding - Number(formData.amountPaid || 0));
 
     return (
         <div className="relative min-h-[calc(100vh-8rem)] pb-24">
@@ -448,36 +469,38 @@ const RecordPaymentPage = () => {
                                 <h2 className="mb-4 text-lg font-medium text-slate-900 dark:text-white">3. Pending EMIs (बकाया किश्त)</h2>
                                 {isLoadingEmis ? (
                                     <div className="py-4"><Loader /></div>
-                                ) : activeEmis.length === 0 ? (
+                                ) : emiSchedule.length === 0 ? (
                                     <div className="text-sm text-emerald-600 bg-emerald-50 p-4 rounded-xl dark:bg-emerald-900/20 dark:text-emerald-400">
-                                        All EMIs are paid for this loan. (सभी किश्त जमा हैं)
+                                        No EMIs found for this loan.
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-64 overflow-y-auto pr-2">
-                                        {activeEmis.map(emi => (
+                                        {emiSchedule.map(emi => {
+                                            const isPaid = emi.status === 'Paid';
+                                            return (
                                             <div
                                                 key={emi.emiNumber}
                                                 onClick={() => handleSelectEmi(emi)}
-                                                className={`cursor-pointer rounded-2xl border p-3 transition-all ${selectedEmi?.emiNumber === emi.emiNumber
+                                                className={`rounded-2xl border p-3 transition-all ${isPaid ? 'opacity-60 cursor-not-allowed border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50' : 'cursor-pointer'} ${selectedEmi?.emiNumber === emi.emiNumber
                                                     ? 'border-sky-500 bg-sky-50/50 dark:border-sky-500 dark:bg-sky-900/10 shadow-sm'
-                                                    : 'border-slate-200 hover:border-sky-300 dark:border-slate-700 dark:hover:border-sky-700'
+                                                    : (!isPaid ? 'border-slate-200 hover:border-sky-300 dark:border-slate-700 dark:hover:border-sky-700' : '')
                                                     }`}
                                             >
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="font-semibold text-slate-900 dark:text-white">EMI #{emi.emiNumber}</span>
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${emi.status === 'Overdue'
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isPaid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : (emi.status === 'Overdue'
                                                         ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                                                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                                                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300')
                                                         }`}>{emi.status}</span>
                                                 </div>
                                                 <div className="text-base font-bold text-slate-900 dark:text-white my-1">
                                                     {formatCurrency(emi.amount)}
                                                 </div>
                                                 <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                                    <FiCalendar size={10} /> Due: {new Date(emi.dueDate).toLocaleDateString()}
+                                                    <FiCalendar size={10} /> {isPaid ? 'Paid' : `Due: ${new Date(emi.dueDate).toLocaleDateString()}`}
                                                 </div>
                                             </div>
-                                        ))}
+                                        )})}
                                     </div>
                                 )}
                             </div>
@@ -575,7 +598,7 @@ const RecordPaymentPage = () => {
                                         <div className="pt-2">
                                             <div className="flex justify-between mb-2">
                                                 <span className="text-slate-600 dark:text-slate-400">Previous Balance</span>
-                                                <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(selectedLoan.outstandingBalance)}</span>
+                                                <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(calculatedOutstanding)}</span>
                                             </div>
                                             <div className="flex justify-between items-center rounded-xl bg-white p-3 shadow-sm dark:bg-slate-800">
                                                 <span className="font-semibold text-slate-700 dark:text-slate-300">New Balance</span>
@@ -592,17 +615,17 @@ const RecordPaymentPage = () => {
 
                 {/* Sticky Action Bar */}
                 <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-slate-200/80 bg-white/95 p-4 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/95 md:pl-64">
-                    <div className="mx-auto flex max-w-7xl items-center justify-end gap-3 sm:gap-4">
-                        <Button type="button" variant="ghost" onClick={handleReset} className="text-slate-600 dark:text-slate-300 text-lg px-6 py-3">
+                    <div className="mx-auto flex max-w-7xl flex-col-reverse sm:flex-row items-center justify-end gap-3 sm:gap-4">
+                        <Button type="button" variant="ghost" onClick={handleReset} className="w-full sm:w-auto text-slate-600 dark:text-slate-300 text-lg px-6 py-3">
                             Reset
                         </Button>
-                        <Button type="button" variant="secondary" onClick={() => navigate(-1)} className="text-lg px-6 py-3">
+                        <Button type="button" variant="secondary" onClick={() => navigate(-1)} className="w-full sm:w-auto text-lg px-6 py-3">
                             Cancel (रद्द करें)
                         </Button>
                         <Button
                             type="submit"
                             disabled={isSubmitting || !selectedEmi || Number(formData.amountPaid) <= 0}
-                            className="min-w-[200px] flex justify-center items-center gap-2 text-xl px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+                            className="w-full sm:w-auto sm:min-w-[200px] flex justify-center items-center gap-2 text-xl px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white"
                         >
                             {isSubmitting ? 'Processing...' : 'Save (जमा करें)'}
                         </Button>

@@ -1,33 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiPrinter, FiDownload, FiShare2, FiCheckCircle } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import Logo from '../../components/common/Logo';
-import { paymentService } from '../../services/api/paymentService';
-import { loanService } from '../../services/api/loanService';
+import api from '../../services/api/axios';
 import { formatCurrency } from '../../utils/format';
 
 const PaymentDetailsPage = () => {
     const { paymentId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     
     const [payment, setPayment] = useState(null);
     const [loan, setLoan] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const { payment: statePayment, autoPrint } = location.state || {};
+
     useEffect(() => {
         const fetchDetails = async () => {
             try {
                 setIsLoading(true);
-                const paymentData = await paymentService.getPaymentById(paymentId);
-                const loanData = await loanService.getLoanDetails(paymentData.loanId);
                 
-                setPayment(paymentData);
-                setLoan(loanData);
-                setError(null);
+                if (statePayment) {
+                    setPayment(statePayment);
+                    
+                    // Fetch real loan info from backend
+                    if (statePayment.rawLoanId) {
+                        try {
+                            const loanRes = await api.get(`/loans/${statePayment.rawLoanId}`);
+                            const loanData = loanRes.data?.loan || loanRes.data;
+                            setLoan(loanData);
+                        } catch (err) {
+                            console.warn("Failed to fetch full loan details", err);
+                            // Fallback minimal loan info from statePayment
+                            setLoan({
+                                customerId: 'N/A',
+                                phone: statePayment.customerPhone || 'N/A',
+                                productName: 'N/A',
+                                months: 'N/A'
+                            });
+                        }
+                    }
+                    setError(null);
+                } else {
+                    // Fallback if accessed directly without state (e.g. page refresh)
+                    setError('Payment details not found. Please access this page from the Payments list.');
+                }
             } catch (err) {
                 setError(err.message || 'Failed to fetch payment details');
             } finally {
@@ -35,10 +57,14 @@ const PaymentDetailsPage = () => {
             }
         };
 
-        if (paymentId) {
-            fetchDetails();
+        fetchDetails();
+    }, [paymentId, statePayment]);
+
+    useEffect(() => {
+        if (!isLoading && payment && autoPrint) {
+            setTimeout(() => window.print(), 500);
         }
-    }, [paymentId]);
+    }, [isLoading, payment, autoPrint]);
 
     const handlePrint = () => {
         window.print();
@@ -53,12 +79,22 @@ const PaymentDetailsPage = () => {
         await navigator.clipboard.writeText(text);
     };
 
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return '-';
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = String(d.getFullYear()).slice(-2);
+        return `${day}/${month}/${year}`;
+    };
+
     if (isLoading) {
         return <div className="flex h-64 items-center justify-center"><Loader /></div>;
     }
 
     if (error) {
-        return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+        return <ErrorState message={error} title="Payment Not Found" onRetry={() => navigate('/payments')} />;
     }
 
     if (!payment || !loan) return null;
@@ -105,7 +141,7 @@ const PaymentDetailsPage = () => {
                     </div>
                     <div className="text-right">
                         <p className="text-sm font-semibold text-slate-900 dark:text-white print:text-black">Receipt No: {payment.id}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 print:text-slate-600 mt-1">Date: {new Date(payment.paymentDate).toLocaleDateString()}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 print:text-slate-600 mt-1">Date: {formatDate(payment.paymentDate)}</p>
                     </div>
                 </div>
 
@@ -122,9 +158,9 @@ const PaymentDetailsPage = () => {
                     <div>
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 print:text-slate-500">Customer Details</h4>
                         <div className="space-y-2 text-sm">
-                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Name: </span><span className="font-semibold text-slate-900 dark:text-white print:text-black">{payment.customerName}</span></p>
-                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Phone: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{loan.phone}</span></p>
-                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Customer ID: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{loan.customerId}</span></p>
+                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Name: </span><span className="font-semibold text-slate-900 dark:text-white print:text-black">{typeof payment.customerName === 'object' ? (payment.customerName.fullName || payment.customerName.name || 'Unknown') : payment.customerName}</span></p>
+                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Phone: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{typeof loan.phone === 'object' ? loan.phone.toString() : (loan.phone || payment.customerPhone || (typeof loan.customerId === 'object' ? loan.customerId.phone : '') || 'N/A')}</span></p>
+                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Customer ID: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{(typeof loan.customerId === 'object' ? (loan.customerId.id || loan.customerId._id) : loan.customerId) || (typeof loan.customer === 'object' ? (loan.customer.customerId || loan.customer.id || loan.customer._id) : loan.customer) || 'N/A'}</span></p>
                         </div>
                     </div>
 
@@ -133,8 +169,8 @@ const PaymentDetailsPage = () => {
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 print:text-slate-500">Loan Details</h4>
                         <div className="space-y-2 text-sm">
                             <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Loan ID: </span><span className="font-semibold text-slate-900 dark:text-white print:text-black">{payment.loanId}</span></p>
-                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Product: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{loan.productName}</span></p>
-                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">EMI Number: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">#{payment.emiNumber} of {loan.months}</span></p>
+                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Product: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{loan.productName || 'N/A'}</span></p>
+                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">EMI Number: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">#{payment.emiNumber} {loan.months ? `of ${loan.months}` : ''}</span></p>
                         </div>
                     </div>
                 </div>

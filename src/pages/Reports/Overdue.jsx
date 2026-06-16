@@ -127,7 +127,7 @@ const OverduePage = () => {
                 <div className="flex min-w-[260px] flex-wrap items-center gap-2">
                     <ActionButton onClick={() => window.location.href = `tel:${r.phone}`} title="Call Customer" icon={<FiPhoneCall />} tone="emerald" />
                     <ActionButton onClick={() => navigate(`/customers/${r.customerId}`)} title="View Customer" icon={<FiEye />} />
-                    <ActionButton onClick={() => navigate(`/loans/${r.loanId}`)} title="View Loan" icon={<FiFileText />} />
+                    <ActionButton onClick={() => navigate(`/loans/${r.rawLoanId}`)} title="View Loan" icon={<FiFileText />} />
                     <ActionButton onClick={() => navigate('/payments/new')} title="Record Payment" icon={<FiCreditCard />} tone="sky" />
                 </div>
             )
@@ -225,7 +225,7 @@ const OverduePage = () => {
                                             <FiCreditCard /> Payment
                                         </Button>
                                         <Button variant="secondary" className="text-sm justify-center gap-2" onClick={() => navigate(`/customers/${acc.customerId}`)}>Customer</Button>
-                                        <Button variant="secondary" className="text-sm justify-center gap-2" onClick={() => navigate(`/loans/${acc.loanId}`)}>Loan</Button>
+                                        <Button variant="secondary" className="text-sm justify-center gap-2" onClick={() => navigate(`/loans/${acc.rawLoanId}`)}>Loan</Button>
                                     </div>
                                 </div>
                             ))}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiDownload, FiSearch, FiFilter, FiEye, FiPrinter, FiDollarSign, FiTrendingUp, FiAlertCircle, FiClock } from 'react-icons/fi';
+import { FiPlus, FiDownload, FiSearch, FiFilter, FiEye, FiPrinter, FiDollarSign, FiTrendingUp, FiAlertCircle, FiClock, FiCheckCircle } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
@@ -16,6 +16,7 @@ const PaymentsPage = () => {
     const [payments, setPayments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [usersMap, setUsersMap] = useState({});
 
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
@@ -26,6 +27,20 @@ const PaymentsPage = () => {
         const fetchPayments = async () => {
             try {
                 setIsLoading(true);
+                
+                // Fetch users for collectedBy mapping
+                let fetchedUsersMap = {};
+                try {
+                    const usersRes = await api.get('/users');
+                    const usersList = usersRes.data?.users || usersRes.data || [];
+                    usersList.forEach(u => {
+                        fetchedUsersMap[u._id] = u.name || u.username || u.fullName || u.email;
+                    });
+                    setUsersMap(fetchedUsersMap);
+                } catch (userErr) {
+                    console.error('Failed to fetch users', userErr);
+                }
+
                 const loansResponse = await api.get('/loans');
                 const loansData = loansResponse.data?.loans || loansResponse.data?.data || loansResponse.data;
                 const loansList = Array.isArray(loansData) ? loansData : [];
@@ -46,15 +61,33 @@ const PaymentsPage = () => {
                         const displayLoanId = loan._id ? `LOAN-${String(loan._id).slice(-6).toUpperCase()}` : (loan.id || id);
 
                         // Only return paid installments as 'payments'
-                        return insts.filter(inst => inst.status === 'Paid').map(inst => ({
-                            ...inst,
-                            id: inst._id || inst.id || `PAY-${Math.random().toString(36).substr(2, 9)}`,
-                            loanId: displayLoanId,
-                            rawLoanId: id,
-                            customerName: cName,
-                            customerPhone: cPhone,
-                            paymentMethod: inst.paymentMode || inst.paymentMethod || 'Cash', // default
-                        }));
+                        return insts.filter(inst => inst.status === 'Paid').map(inst => {
+                            const rawId = inst._id || inst.id;
+                            const shortId = rawId ? `PAY-${String(rawId).slice(-6).toUpperCase()}` : `PAY-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+                            const pDate = inst.paidOn || inst.paymentDate || inst.paidDate || inst.updatedAt || inst.createdAt || new Date().toISOString();
+                            let collectorName = inst.collectedBy;
+                            if (typeof collectorName === 'object' && collectorName !== null) {
+                                collectorName = collectorName.name || collectorName.username || collectorName.fullName || collectorName._id;
+                            } else if (fetchedUsersMap[collectorName]) {
+                                collectorName = fetchedUsersMap[collectorName];
+                            } else if (typeof collectorName === 'string' && collectorName.length === 24) {
+                                collectorName = 'Staff'; // Fallback if backend fetch fails
+                            }
+
+                            return {
+                                ...inst,
+                                id: shortId,
+                                rawId: rawId,
+                                loanId: displayLoanId,
+                                rawLoanId: id,
+                                customerName: cName,
+                                customerPhone: cPhone,
+                                paymentMethod: inst.paymentMode || inst.paymentMethod || 'Cash', // default
+                                paymentDate: pDate,
+                                paidDate: pDate,
+                                collectedBy: collectorName || 'System',
+                            };
+                        });
                     } catch (e) {
                         console.error(`Failed to fetch installments for loan ${loan._id || loan.id}`, e);
                         return [];
@@ -75,20 +108,22 @@ const PaymentsPage = () => {
         fetchPayments();
     }, []);
 
-    // Summary Calculations (Mocked for demonstration, would normally come from backend)
+    // Summary Calculations
     const summary = useMemo(() => {
         const today = new Date().toISOString().split('T')[0];
         const currentMonth = new Date().getMonth();
         
-        const todayTotal = payments.filter(p => p.paymentDate === today).reduce((sum, p) => sum + p.amount, 0);
-        const monthTotal = payments.filter(p => new Date(p.paymentDate).getMonth() === currentMonth).reduce((sum, p) => sum + p.amount, 0);
+        const todayPayments = payments.filter(p => p.paymentDate && p.paymentDate.startsWith(today));
+        const monthPayments = payments.filter(p => p.paymentDate && new Date(p.paymentDate).getMonth() === currentMonth);
+
+        const todayTotal = todayPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const monthTotal = monthPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
         
         return {
             todayCollection: todayTotal,
             monthCollection: monthTotal,
-            pendingCollection: 45000, // Mocked 
-            overdueCollection: 12500, // Mocked
-            successRate: 94 // Mocked
+            todayCount: todayPayments.length,
+            monthCount: monthPayments.length
         };
     }, [payments]);
 
@@ -111,7 +146,7 @@ const PaymentsPage = () => {
         if (dateRange) {
             const today = new Date().toISOString().split('T')[0];
             if (dateRange === 'Today') {
-                result = result.filter(p => p.paymentDate === today);
+                result = result.filter(p => p.paymentDate && p.paymentDate.startsWith(today));
             }
             // Add more ranges as needed
         }
@@ -134,7 +169,7 @@ const PaymentsPage = () => {
                 payment.loanId,
                 payment.emiNumber,
                 payment.amount,
-                payment.paymentDate,
+                formatDate(payment.paymentDate),
                 payment.paymentMethod,
                 payment.collectedBy,
             ]),
@@ -148,6 +183,16 @@ const PaymentsPage = () => {
         URL.revokeObjectURL(url);
     };
 
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return '-';
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = String(d.getFullYear()).slice(-2);
+        return `${day}/${month}/${year}`;
+    };
+
     const columns = [
         { key: 'id', label: 'Payment ID', render: (r) => <span className="font-semibold text-sky-600 dark:text-sky-400">{r.id}</span> },
         { key: 'customer', label: 'Customer / Loan', render: (r) => (
@@ -157,7 +202,7 @@ const PaymentsPage = () => {
             </div>
         )},
         { key: 'amount', label: 'Amount', render: (r) => <span className="font-medium">{formatCurrency(r.amount)}</span> },
-        { key: 'paymentDate', label: 'Date', render: (r) => new Date(r.paymentDate).toLocaleDateString() },
+        { key: 'paymentDate', label: 'Date', render: (r) => formatDate(r.paymentDate) },
         { key: 'method', label: 'Method', render: (r) => {
             const colors = {
                 'Cash': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -172,10 +217,10 @@ const PaymentsPage = () => {
             label: '',
             render: (r) => (
                 <div className="flex items-center justify-end gap-2">
-                    <button onClick={() => navigate(`/payments/${r.id}`)} className="p-1.5 text-slate-400 hover:text-sky-600 transition" title="View Receipt">
+                    <button onClick={() => navigate(`/payments/${r.id}`, { state: { payment: r, autoPrint: false } })} className="p-1.5 text-slate-400 hover:text-sky-600 transition" title="View Receipt">
                         <FiEye size={18} />
                     </button>
-                    <button onClick={() => navigate(`/payments/${r.id}`)} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition" title="Print Receipt">
+                    <button onClick={() => navigate(`/payments/${r.id}`, { state: { payment: r, autoPrint: true } })} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition" title="Print Receipt">
                         <FiPrinter size={18} />
                     </button>
                 </div>
@@ -212,12 +257,11 @@ const PaymentsPage = () => {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <KpiCard title="Today's Collection" value={formatCurrency(summary.todayCollection)} icon={<FiDollarSign />} color="emerald" />
                 <KpiCard title="This Month" value={formatCurrency(summary.monthCollection)} icon={<FiTrendingUp />} color="sky" />
-                <KpiCard title="Pending" value={formatCurrency(summary.pendingCollection)} icon={<FiClock />} color="amber" />
-                <KpiCard title="Overdue" value={formatCurrency(summary.overdueCollection)} icon={<FiAlertCircle />} color="red" />
-                <KpiCard title="Success Rate" value={`${summary.successRate}%`} icon={<FiTrendingUp />} color="purple" />
+                <KpiCard title="Payments Today" value={`${summary.todayCount} Payments`} icon={<FiCheckCircle />} color="purple" />
+                <KpiCard title="Payments This Month" value={`${summary.monthCount} Payments`} icon={<FiCheckCircle />} color="amber" />
             </div>
 
             {/* Main Content */}
@@ -298,11 +342,11 @@ const PaymentsPage = () => {
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between text-xs text-slate-500 mb-4 border-t border-slate-100 dark:border-slate-800 pt-3">
-                                        <span>Date: {new Date(payment.paymentDate).toLocaleDateString()}</span>
+                                        <span>Date: {formatDate(payment.paymentDate)}</span>
                                         <span>By: {payment.collectedBy}</span>
                                     </div>
                                     <div className="flex gap-2">
-                                        <Button variant="secondary" className="flex-1 text-xs justify-center gap-1" onClick={() => navigate(`/payments/${payment.id}`)}>
+                                        <Button variant="secondary" className="flex-1 text-xs justify-center gap-1" onClick={() => navigate(`/payments/${payment.id}`, { state: { payment, autoPrint: false } })}>
                                             <FiEye /> View Receipt
                                         </Button>
                                     </div>
