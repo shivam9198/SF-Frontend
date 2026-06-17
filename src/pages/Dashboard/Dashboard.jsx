@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MdWavingHand } from 'react-icons/md'
 import Card from '../../components/common/Card'
 import ErrorState from '../../components/common/ErrorState'
@@ -6,11 +6,9 @@ import DashboardSkeleton from './components/DashboardSkeleton'
 import KpiCard from './components/KpiCard'
 import RecentPaymentsTable from './components/RecentPaymentsTable'
 import QuickActions from './components/QuickActions'
-import {
-    getDashboardMetrics,
-    getQuickActions,
-    getRecentPayments,
-} from '../../services/api/dashboardService'
+import CollectionAuditModal from './components/CollectionAuditModal'
+import { getDashboardData } from '../../services/api/dashboardService'
+import { authService } from '../../services/api/authService'
 import { formatCurrency, formatDate, getDayPeriod } from '../../utils/format'
 
 function DashboardPage() {
@@ -18,27 +16,32 @@ function DashboardPage() {
     const [error, setError] = useState('')
     const [metrics, setMetrics] = useState([])
     const [recentPayments, setRecentPayments] = useState([])
+    const [allPayments, setAllPayments] = useState([])
     const [quickActions, setQuickActions] = useState([])
+    const [userName, setUserName] = useState('User')
+
+    const [auditModalOpen, setAuditModalOpen] = useState(false)
+    const [auditTitle, setAuditTitle] = useState('')
+    const [auditFilterMode, setAuditFilterMode] = useState('all')
 
     const loadDashboard = async () => {
         setLoading(true)
         setError('')
 
         try {
-            const [metricData, payments, actions] = await Promise.all([
-                getDashboardMetrics(),
-                getRecentPayments(),
-                getQuickActions(),
-            ])
+            // Get user info
+            const user = await authService.getMe()
+            if (user && (user.name || user.fullName || user.username)) {
+                setUserName(user.name || user.fullName || user.username)
+            }
 
-            // Only keep the most essential metrics for simplicity
-            const essentialMetrics = metricData.filter(m => 
-                ['customers', 'loans', 'collection', 'overdue'].includes(m.key)
-            )
+            // Get dashboard data
+            const data = await getDashboardData()
 
-            setMetrics(essentialMetrics)
-            setRecentPayments(payments)
-            setQuickActions(actions)
+            setMetrics(data.metrics)
+            setRecentPayments(data.recentPayments)
+            setAllPayments(data.allPayments || [])
+            setQuickActions(data.quickActions)
         } catch (err) {
             console.error('Error loading dashboard data:', err)
             setError('Unable to load dashboard data. Please try again.')
@@ -51,13 +54,27 @@ function DashboardPage() {
         loadDashboard()
     }, [])
 
-    const todayCollection = useMemo(
-        () => metrics.find((metric) => metric.key === 'collection')?.value || 0,
-        [metrics],
-    )
+    const handleKpiClick = (metric) => {
+        console.log('KPI Clicked:', metric.key);
+        if (metric.key === 'collection') {
+            setAuditTitle("Today's Collection Audit")
+            setAuditFilterMode('today')
+            setAuditModalOpen(true)
+        } else if (metric.key === 'month_collection') {
+            setAuditTitle("This Month's Collection Audit")
+            setAuditFilterMode('month')
+            setAuditModalOpen(true)
+        } else if (metric.key === 'paid') {
+            setAuditTitle("All Paid Installments")
+            setAuditFilterMode('all')
+            setAuditModalOpen(true)
+        }
+    }
 
-    const greeting = useMemo(() => `${getDayPeriod()}, Aria`, [])
-    const today = useMemo(() => formatDate(new Date()), [])
+    const todayCollection = metrics.find((metric) => metric.key === 'collection')?.value || 0
+
+    const greeting = `${getDayPeriod()}, ${userName}`
+    const today = formatDate(new Date())
 
     if (loading) {
         return <DashboardSkeleton />
@@ -68,7 +85,7 @@ function DashboardPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
             {/* Simple Hero Section */}
             <Card className="bg-gradient-to-br from-indigo-50 via-white to-sky-50 shadow-sm border border-indigo-100/50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-900 dark:border-slate-800">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -94,17 +111,33 @@ function DashboardPage() {
                 <QuickActions actions={quickActions} />
             </div>
 
-            {/* KPI Metrics - 2 columns on mobile, 4 on desktop */}
-            <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
-                {metrics.map((metric) => (
-                    <KpiCard key={metric.id} metric={metric} />
-                ))}
+            {/* KPI Metrics - show all metrics requested */}
+            <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {metrics.map((metric) => {
+                    const isClickable = ['collection', 'month_collection', 'paid'].includes(metric.key)
+                    return (
+                        <KpiCard 
+                            key={metric.id} 
+                            metric={metric} 
+                            onClick={isClickable ? () => handleKpiClick(metric) : undefined} 
+                        />
+                    )
+                })}
             </div>
 
             {/* Recent Activity */}
             <div className="min-w-0">
                 <RecentPaymentsTable payments={recentPayments} />
             </div>
+
+            {/* Collection Audit Modal */}
+            <CollectionAuditModal 
+                isOpen={auditModalOpen}
+                onClose={() => setAuditModalOpen(false)}
+                title={auditTitle}
+                filterMode={auditFilterMode}
+                payments={allPayments}
+            />
         </div>
     )
 }

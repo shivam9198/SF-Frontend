@@ -10,6 +10,17 @@ export const authService = {
         }
     },
 
+    getMe: async () => {
+        try {
+            const response = await api.get('/auth/me');
+            return response.data?.user || response.data;
+        } catch (error) {
+            console.error("Failed to fetch user profile:", error);
+            // Fallback to local storage if API fails
+            return authService.getCurrentUser();
+        }
+    },
+
     logout: () => {
         // Handled by AuthContext clearing localStorage
     },
