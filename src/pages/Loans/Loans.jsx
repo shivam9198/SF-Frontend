@@ -29,13 +29,39 @@ function LoansPage() {
                 setIsLoading(true);
                 const response = await api.get('/loans');
                 const rawLoans = response.data.loans || response.data;
-                const processedLoans = Array.isArray(rawLoans) ? rawLoans.map(loan => {
+                const processedLoans = await Promise.all((Array.isArray(rawLoans) ? rawLoans : []).map(async loan => {
                     let customerObj = loan.customer;
                     if (!customerObj && loan.customerId && typeof loan.customerId === 'object') {
                         customerObj = loan.customerId;
                     }
-                    return { ...loan, customer: customerObj };
-                }) : [];
+
+                    let realInstallments = [];
+                    try {
+                        const instRes = await api.get(`/loans/${loan._id || loan.id}/installments`);
+                        const resData = instRes.data?.data || instRes.data;
+                        realInstallments = Array.isArray(resData) ? resData : (resData?.installments || []);
+                    } catch (e) {
+                        console.error('Failed to fetch installments for loan', loan._id || loan.id);
+                    }
+
+                    let totalEmis = loan.emiPlan || loan.totalEmis || 1;
+                    let paidEmis = loan.paidEmis || 0;
+                    let outstandingBalance = loan.outstandingBalance ?? ((loan.loanAmount || 0) - (paidEmis * (loan.monthlyEmi || 0)));
+
+                    if (realInstallments.length > 0) {
+                        totalEmis = realInstallments.length;
+                        paidEmis = realInstallments.filter(e => e.status === 'Paid').length;
+                        outstandingBalance = realInstallments.filter(e => e.status !== 'Paid').reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+                    }
+
+                    return { 
+                        ...loan, 
+                        customer: customerObj,
+                        trueTotalEmis: totalEmis,
+                        truePaidEmis: paidEmis,
+                        trueOutstandingBalance: outstandingBalance
+                    };
+                }));
                 setLoans(processedLoans);
                 setError(null);
             } catch (err) {
@@ -101,8 +127,8 @@ function LoansPage() {
             key: 'status',
             label: 'EMI Progress',
             render: (loan) => {
-                const total = loan.emiPlan || loan.totalEmis || 1;
-                const paid = loan.paidEmis || 0;
+                const total = loan.trueTotalEmis ?? loan.emiPlan ?? loan.totalEmis ?? 1;
+                const paid = loan.truePaidEmis ?? loan.paidEmis ?? 0;
                 const percent = Math.min(100, Math.round((paid / total) * 100));
                 return (
                     <div className="w-full max-w-[120px]">
@@ -124,8 +150,8 @@ function LoansPage() {
             key: 'outstanding',
             label: 'Remaining Balance',
             render: (loan) => {
-                const paid = loan.paidEmis || 0;
-                const outstanding = loan.outstandingBalance ?? ((loan.loanAmount || 0) - (paid * (loan.monthlyEmi || 0)));
+                const paid = loan.truePaidEmis ?? loan.paidEmis ?? 0;
+                const outstanding = loan.trueOutstandingBalance ?? loan.outstandingBalance ?? ((loan.loanAmount || 0) - (paid * (loan.monthlyEmi || 0)));
                 return (
                     <span className={`font-medium ${outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                         {formatCurrency(Math.max(0, outstanding))}
@@ -205,10 +231,10 @@ function LoansPage() {
                     </div>
                     <div className="grid grid-cols-1 gap-4 md:hidden">
                         {filteredLoans.map(loan => {
-                            const total = loan.emiPlan || loan.totalEmis || 1;
-                            const paid = loan.paidEmis || 0;
+                            const total = loan.trueTotalEmis ?? loan.emiPlan ?? loan.totalEmis ?? 1;
+                            const paid = loan.truePaidEmis ?? loan.paidEmis ?? 0;
                             const percent = Math.min(100, Math.round((paid / total) * 100));
-                            const outstanding = loan.outstandingBalance ?? ((loan.loanAmount || 0) - (paid * (loan.monthlyEmi || 0)));
+                            const outstanding = loan.trueOutstandingBalance ?? loan.outstandingBalance ?? ((loan.loanAmount || 0) - (paid * (loan.monthlyEmi || 0)));
                             const displayId = loan._id ? `LOAN-${String(loan._id).slice(-6).toUpperCase()}` : loan.id;
                             const customerId = loan.customer?._id || loan.customer?.id || (typeof loan.customerId === 'string' ? loan.customerId : null);
                             const displayCusId = customerId ? `CUS-${String(customerId).slice(-6).toUpperCase()}` : 'N/A';

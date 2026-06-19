@@ -7,8 +7,7 @@ import ErrorState from '../../components/common/ErrorState';
 import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import api from '../../services/api/axios';
-
-const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount || 0);
+import { formatCurrency, formatDate } from '../../utils/format';
 
 const EmiSchedulePage = () => {
     const params = useParams();
@@ -21,72 +20,33 @@ const EmiSchedulePage = () => {
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    // Payment State
-    const [paymentModal, setPaymentModal] = useState(null);
-    const [paymentMode, setPaymentMode] = useState('Cash');
-    const [isPaying, setIsPaying] = useState(false);
-    const [toast, setToast] = useState(null);
-
-    const showToast = (type, message) => {
-        setToast({ type, message });
-        setTimeout(() => setToast(null), 3000);
-    };
-
-    const handleOpenPaymentModal = (emi) => {
-        setPaymentModal(emi);
-        setPaymentMode('Cash');
-    };
-
-    const submitPayment = async () => {
-        if (!paymentModal) return;
-        try {
-            setIsPaying(true);
-            const installmentId = paymentModal._id || paymentModal.id;
-            
-            await api.patch(`/emis/${installmentId}/pay`, {
-                paymentMode: paymentMode
-            });
-            
-            // Success! Update schedule array instantly
-            setData(prev => {
-                if (!prev) return prev;
-                const newInstallments = prev.installments.map(emi => {
-                    if ((emi._id || emi.id) === installmentId) {
-                        return {
-                            ...emi,
-                            status: 'Paid',
-                            paidDate: new Date().toISOString(),
-                            paymentMode: paymentMode,
-                            collectedBy: 'Current User' // Simulating real staff name update
-                        };
-                    }
-                    return emi;
-                });
-                return {
-                    totalInstallments: newInstallments.length,
-                    paidInstallments: newInstallments.filter(i => i.status === 'Paid').length,
-                    pendingInstallments: newInstallments.filter(i => i.status === 'Pending').length,
-                    overdueInstallments: newInstallments.filter(i => i.status === 'Overdue').length,
-                    installments: newInstallments
-                };
-            });
-            
-            showToast('success', 'EMI payment recorded successfully');
-            setPaymentModal(null);
-        } catch (err) {
-            console.error('Payment Error:', err);
-            const errorMsg = err.response?.data?.message || err.message || 'Payment failed';
-            showToast('error', errorMsg);
-        } finally {
-            setIsPaying(false);
-        }
-    };
+    const [staffMap, setStaffMap] = useState({});
 
     useEffect(() => {
         const fetchSchedule = async () => {
             try {
                 setIsLoading(true);
+
+                // Fetch staff/users to resolve collectedBy ObjectIDs
+                let fetchedStaffMap = {};
+                try {
+                    const usersRes = await api.get('/users');
+                    const usersList = usersRes.data?.users || usersRes.data || [];
+                    usersList.forEach(u => {
+                        fetchedStaffMap[u._id] = u.name || u.username || u.fullName || u.email;
+                    });
+                } catch (e) {
+                    try {
+                        const staffRes = await api.get('/staff');
+                        const staffList = staffRes.data?.staff || staffRes.data || [];
+                        staffList.forEach(s => {
+                            fetchedStaffMap[s._id] = s.name || s.username || s.fullName || s.email;
+                        });
+                    } catch (err) {
+                        console.error('Failed to fetch staff list', err);
+                    }
+                }
+                setStaffMap(fetchedStaffMap);
 
                 const response = await api.get(`/loans/${actualLoanId}/installments`);
                 
@@ -256,7 +216,6 @@ const EmiSchedulePage = () => {
                                     <th className="px-4 py-4 font-medium">Status</th>
                                     <th className="px-4 py-4 font-medium">Paid Date</th>
                                     <th className="px-4 py-4 font-medium">Collected By</th>
-                                    <th className="px-4 py-4 font-medium text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -284,25 +243,18 @@ const EmiSchedulePage = () => {
                                     return (
                                         <tr key={row._id || row.id || idx} className={rowClass}>
                                             <td className="px-4 py-4 font-semibold text-slate-900 dark:text-white">#{row.emiNumber}</td>
-                                            <td className="px-4 py-4">{row.dueDate ? new Date(row.dueDate).toLocaleDateString() : '-'}</td>
+                                            <td className="px-4 py-4">{formatDate(row.dueDate)}</td>
                                             <td className="px-4 py-4 font-medium text-slate-900 dark:text-white">{formatCurrency(row.amount)}</td>
                                             <td className="px-4 py-4">
                                                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${customBadgeClass || 'bg-slate-100 text-slate-700'}`}>
                                                     {row.status}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-4">{row.paidDate ? new Date(row.paidDate).toLocaleDateString() : '-'}</td>
-                                            <td className="px-4 py-4">{row.collectedBy || '-'}</td>
-                                            <td className="px-4 py-4 text-right">
-                                                {row.status === 'Paid' ? (
-                                                    <Button variant="ghost" disabled className="text-xs px-3 py-1 text-slate-400 cursor-not-allowed border border-transparent">
-                                                        Already Paid
-                                                    </Button>
-                                                ) : (
-                                                    <Button variant="primary" className="text-xs px-3 py-1 bg-sky-600 hover:bg-sky-700 text-white" onClick={() => handleOpenPaymentModal(row)}>
-                                                        Mark Paid
-                                                    </Button>
-                                                )}
+                                            <td className="px-4 py-4">
+                                                {row.status === 'Paid' ? formatDate(row.paidOn || row.paidDate || row.paymentDate) : '-'}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                {row.status === 'Paid' && row.collectedBy ? (staffMap[row.collectedBy] || row.collectedBy.name || row.collectedBy.fullName || row.collectedBy) : '-'}
                                             </td>
                                         </tr>
                                     );
@@ -318,57 +270,6 @@ const EmiSchedulePage = () => {
                 )}
             </div>
 
-            {/* Payment Modal */}
-            {paymentModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800">
-                        <div className="mb-4 flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Record EMI Payment</h3>
-                            <button onClick={() => setPaymentModal(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                                <FiX size={20} />
-                            </button>
-                        </div>
-                        <div className="mb-6 space-y-4 text-sm text-slate-600 dark:text-slate-300">
-                            <div className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
-                                <span className="font-medium">EMI No:</span>
-                                <span className="text-slate-900 dark:text-white">#{paymentModal.emiNumber}</span>
-                            </div>
-                            <div className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
-                                <span className="font-medium">Amount:</span>
-                                <span className="text-slate-900 dark:text-white font-semibold">{formatCurrency(paymentModal.amount)}</span>
-                            </div>
-                            
-                            <div className="pt-2">
-                                <label className="mb-1 block font-medium text-slate-700 dark:text-slate-200">Payment Mode</label>
-                                <Select
-                                    value={paymentMode}
-                                    onChange={(e) => setPaymentMode(e.target.value)}
-                                    options={[
-                                        { value: 'Cash', label: 'Cash' },
-                                        { value: 'UPI', label: 'UPI' },
-                                        { value: 'Bank Transfer', label: 'Bank Transfer' }
-                                    ]}
-                                    className="w-full"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex justify-end gap-3 mt-8">
-                            <Button variant="ghost" onClick={() => setPaymentModal(null)}>Cancel</Button>
-                            <Button variant="primary" onClick={submitPayment} disabled={isPaying}>
-                                {isPaying ? 'Processing...' : 'Confirm Payment'}
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Toast Notification */}
-            {toast && (
-                <div className={`fixed right-4 top-4 z-[110] flex animate-bounce items-center gap-3 rounded-2xl px-4 py-3 shadow-lg ${toast.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
-                    {toast.type === 'success' ? <FiCheckCircle size={20} /> : <FiXCircle size={20} />}
-                    <p className="text-sm font-medium">{toast.message}</p>
-                </div>
-            )}
         </div>
     );
 };

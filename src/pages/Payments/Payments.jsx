@@ -9,7 +9,7 @@ import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import EmptyState from '../../components/common/EmptyState';
 import api from '../../services/api/axios';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatId } from '../../utils/format';
 
 const PaymentsPage = () => {
     const navigate = useNavigate();
@@ -195,11 +195,13 @@ const PaymentsPage = () => {
 
     const columns = [
         { key: 'id', label: 'Payment ID', render: (r) => <span className="font-semibold text-sky-600 dark:text-sky-400">{r.id}</span> },
+        { key: 'customerName', label: 'Customer', render: (r) => <span className="font-medium text-slate-900 dark:text-white">{r.customerName}</span> },
+        { key: 'customerId', label: 'Customer ID', render: (r) => <span className="text-slate-500 dark:text-slate-400">{formatId(r.customerDisplayId)}</span> },
         {
-            key: 'customer', label: 'Customer / Loan', render: (r) => (
+            key: 'loan', label: 'Loan / EMI', render: (r) => (
                 <div>
-                    <p className="font-medium text-slate-900 dark:text-white">{r.customerName}</p>
-                    <p className="text-xs text-slate-500">{r.loanId} • EMI #{r.emiNumber}</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{r.loanId}</p>
+                    <p className="text-xs text-slate-500">EMI #{r.emiNumber}</p>
                 </div>
             )
         },

@@ -24,6 +24,7 @@ const StaffProfilePage = lazy(() => import('../pages/Staff/StaffProfile'))
 const EditStaffPage = lazy(() => import('../pages/Staff/EditStaff'))
 const AccessDeniedPage = lazy(() => import('../pages/System/AccessDenied'))
 const NotFoundPage = lazy(() => import('../pages/System/NotFound'))
+const ProfilePage = lazy(() => import('../pages/Profile/Profile'))
 
 function AppRoutes() {
     return (
@@ -31,6 +32,7 @@ function AppRoutes() {
             <Routes>
                 {/* Protected Routes for all authenticated users */}
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
                 <Route path="/customers/new" element={<ProtectedRoute><AddCustomerPage /></ProtectedRoute>} />
                 <Route path="/customers/:id" element={<ProtectedRoute><CustomerDetailsPage /></ProtectedRoute>} />

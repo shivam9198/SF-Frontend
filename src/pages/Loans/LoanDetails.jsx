@@ -93,7 +93,7 @@ const LoanDetailsPage = () => {
 
     // Derived Statistics
     const stats = useMemo(() => {
-        const totalEmis = loan?.emiPlan || loan?.months || schedule.length || 0;
+        let totalEmis = loan?.emiPlan || loan?.months || schedule.length || 0;
         const paid = loan?.paidEmis || 0;
 
         if (!schedule || !schedule.length) {
@@ -107,6 +107,7 @@ const LoanDetailsPage = () => {
             };
         }
 
+        totalEmis = schedule.length; // Priority to real EMI data
         const paidEmis = schedule.filter(e => e.status === 'Paid').length;
         const pendingEmis = schedule.filter(e => e.status === 'Pending').length;
         const overdueEmis = schedule.filter(e => e.status === 'Overdue').length;

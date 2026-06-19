@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Badge from '../../../components/common/Badge'
 import Button from '../../../components/common/Button'
 import EmptyState from '../../../components/common/EmptyState'
-import { formatCurrency, formatDate } from '../../../utils/format'
+import { formatCurrency, formatDate, formatId } from '../../../utils/format'
 
 const STATUS_VARIANT = {
     Received: 'success',
@@ -23,7 +23,7 @@ function RecentPaymentsTable({ payments }) {
         const query = search.trim().toLowerCase()
         if (!query) return payments
         return payments.filter((payment) =>
-            [payment.customer, payment.method, payment.status, payment.loanId, payment.emiNumber, payment.collectedBy].some((value) =>
+            [payment.customer, payment.customerDisplayId, payment.method, payment.status, payment.loanId, payment.emiNumber, payment.collectedBy].some((value) =>
                 value && value.toString().toLowerCase().includes(query),
             ),
         )
@@ -61,6 +61,7 @@ function RecentPaymentsTable({ payments }) {
                             <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                                 <tr>
                                     <th className="px-4 py-3 font-medium">Customer</th>
+                                    <th className="px-4 py-3 font-medium">Customer ID</th>
                                     <th className="px-4 py-3 font-medium">Loan ID</th>
                                     <th className="px-4 py-3 font-medium text-center">EMI No.</th>
                                     <th className="px-4 py-3 font-medium text-right">Amount</th>
@@ -75,6 +76,9 @@ function RecentPaymentsTable({ payments }) {
                                     <tr key={payment.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
                                         <td className="px-4 py-4">
                                             <p className="font-medium text-slate-900 dark:text-slate-100">{payment.customer}</p>
+                                        </td>
+                                        <td className="px-4 py-4 text-slate-500 dark:text-slate-400">
+                                            {formatId(payment.customerDisplayId)}
                                         </td>
                                         <td className="px-4 py-4">
                                             {payment.rawLoanId ? (

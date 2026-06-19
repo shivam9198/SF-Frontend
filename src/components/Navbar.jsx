@@ -63,26 +63,18 @@ function Navbar({ onMenuClick }) {
                         <button
                             type="button"
                             className="inline-flex items-center gap-3 rounded-3xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                            onClick={() => navigate('/profile')}
                         >
-                            <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-white">A</span>
-                            <span className="hidden sm:inline">{user?.name}</span>
+                            <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-white font-bold tracking-widest uppercase">
+                                {user?.name?.charAt(0) || user?.fullName?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                            </span>
+                            <span className="hidden sm:inline">{user?.name || user?.fullName || user?.username || 'User'}</span>
                         </button>
                         <div className="invisible absolute right-0 mt-2 w-44 rounded-3xl border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-soft opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
-                            {user?.role?.toLowerCase() === 'admin' ? (
-                                <>
-                                    <Link to="/settings" className="block rounded-2xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800">
-                                        My Profile
-                                    </Link>
-                                    <Link to="/settings" className="block rounded-2xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800">
-                                        Change Password
-                                    </Link>
-                                </>
-                            ) : (
-                                <Link to="/dashboard" className="block rounded-2xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800">
-                                    My Dashboard
-                                </Link>
-                            )}
-                            <button type="button" onClick={logout} className="w-full text-left block rounded-2xl px-3 py-2 text-sky-700 hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-slate-800">
+                            <Link to="/profile" className="block rounded-2xl px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                My Profile
+                            </Link>
+                            <button type="button" onClick={logout} className="w-full text-left block rounded-2xl px-3 py-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors">
                                 Logout
                             </button>
                         </div>

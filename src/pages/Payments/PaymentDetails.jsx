@@ -6,7 +6,7 @@ import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import Logo from '../../components/common/Logo';
 import api from '../../services/api/axios';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatId } from '../../utils/format';
 
 const PaymentDetailsPage = () => {
     const { paymentId } = useParams();
@@ -160,7 +160,7 @@ const PaymentDetailsPage = () => {
                         <div className="space-y-2 text-sm">
                             <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Name: </span><span className="font-semibold text-slate-900 dark:text-white print:text-black">{typeof payment.customerName === 'object' ? (payment.customerName.fullName || payment.customerName.name || 'Unknown') : payment.customerName}</span></p>
                             <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Phone: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{typeof loan.phone === 'object' ? loan.phone.toString() : (loan.phone || payment.customerPhone || (typeof loan.customerId === 'object' ? loan.customerId.phone : '') || 'N/A')}</span></p>
-                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Customer ID: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{(typeof loan.customerId === 'object' ? (loan.customerId.id || loan.customerId._id) : loan.customerId) || (typeof loan.customer === 'object' ? (loan.customer.customerId || loan.customer.id || loan.customer._id) : loan.customer) || 'N/A'}</span></p>
+                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Customer ID: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{formatId((typeof loan.customerId === 'object' ? (loan.customerId.id || loan.customerId._id) : loan.customerId) || (typeof loan.customer === 'object' ? (loan.customer.customerId || loan.customer.id || loan.customer._id) : loan.customer))}</span></p>
                         </div>
                     </div>
 

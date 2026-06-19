@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { MdClose } from 'react-icons/md';
-import { formatCurrency, formatDate } from '../../../utils/format';
+import { formatCurrency, formatDate, formatId } from '../../../utils/format';
 
 function CollectionAuditModal({ isOpen, onClose, title, payments, filterMode }) {
     const today = new Date();
@@ -126,7 +126,7 @@ function CollectionAuditModal({ isOpen, onClose, title, payments, filterMode }) 
                                     {filteredPayments.map(p => (
                                         <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                             <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{p.customer}</td>
-                                            <td className="px-4 py-3">{p.customerDisplayId || '-'}</td>
+                                            <td className="px-4 py-3">{formatId(p.customerDisplayId || p.customerId || '-')}</td>
                                             <td className="px-4 py-3">{p.loanId}</td>
                                             <td className="px-4 py-3">EMI #{p.emiNumber}</td>
                                             <td className="px-4 py-3 text-right font-semibold">{formatCurrency(p.amount)}</td>

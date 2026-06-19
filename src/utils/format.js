@@ -16,6 +16,16 @@ export function formatDate(value) {
   return `${day}/${month}/${year}`;
 }
 
+export function formatId(id) {
+  if (!id) return '-';
+  const idStr = String(id);
+  // Check if it's already formatted
+  if (idStr.startsWith('CUS-') || idStr.startsWith('LOAN-') || idStr.startsWith('PAY-')) {
+    return idStr;
+  }
+  return `CUS-${idStr.slice(-6).toUpperCase()}`;
+}
+
 export function getDayPeriod() {
   const hour = new Date().getHours();
   if (hour < 12) return "Morning";
