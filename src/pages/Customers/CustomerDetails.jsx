@@ -7,10 +7,27 @@ import ErrorState from '../../components/common/ErrorState';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import api from '../../services/api/axios';
+import { formatName } from '../../utils/format';
 
 const formatId = (id) => {
     if (!id) return '';
     return `CUS-${String(id).slice(-6).toUpperCase()}`;
+};
+
+const documentTypeOptions = [
+    { value: 'Aadhaar', label: 'Aadhaar Card' },
+    { value: 'PAN', label: 'PAN Card' },
+    { value: 'DL', label: 'Driving License' },
+    { value: 'Voter ID', label: 'Voter ID' }
+];
+
+const normalizeDocumentType = (value) => {
+    const mappings = {
+        'PAN Card': 'PAN',
+        'Driving License': 'DL'
+    };
+
+    return mappings[value] || value;
 };
 
 const CustomerDetailsPage = () => {
@@ -73,7 +90,7 @@ const CustomerDetailsPage = () => {
             city: customer.address?.city || '',
             state: customer.address?.state || '',
             pincode: customer.address?.pincode || '',
-            kycDocumentType: customer.kycDocumentType || ''
+            kycDocumentType: normalizeDocumentType(customer.kycDocumentType || '')
         });
         setIsEditing(true);
     };
@@ -109,7 +126,7 @@ const CustomerDetailsPage = () => {
                     state: formData.state,
                     pincode: formData.pincode
                 },
-                kycDocumentType: formData.kycDocumentType
+                kycDocumentType: normalizeDocumentType(formData.kycDocumentType)
             };
             const res = await api.put(`/customers/${customer._id}`, payload);
             setCustomer(res.data.customer || res.data);
@@ -135,7 +152,7 @@ const CustomerDetailsPage = () => {
                     </button>
                     <div>
                         <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">{customer.fullName}</h1>
+                            <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">{formatName(customer.fullName)}</h1>
                         </div>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                             Customer ID: <span className="font-medium text-slate-700 dark:text-slate-300">{formatId(customer._id)}</span>
@@ -168,12 +185,7 @@ const CustomerDetailsPage = () => {
                             id="kycDocumentType"
                             value={formData.kycDocumentType}
                             onChange={handleChange}
-                            options={[
-                                { value: 'Aadhaar', label: 'Aadhaar Card' },
-                                { value: 'PAN Card', label: 'PAN Card' },
-                                { value: 'Driving License', label: 'Driving License' },
-                                { value: 'Voter ID', label: 'Voter ID' }
-                            ]}
+                            options={documentTypeOptions}
                         />
                     </div>
                     <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">

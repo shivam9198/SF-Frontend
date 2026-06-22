@@ -7,7 +7,7 @@ import ErrorState from '../../components/common/ErrorState';
 import Button from '../../components/common/Button';
 import Select from '../../components/common/Select';
 import api from '../../services/api/axios';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency, formatDate, formatName, formatPaidDate } from '../../utils/format';
 
 const EmiSchedulePage = () => {
     const params = useParams();
@@ -139,6 +139,12 @@ const EmiSchedulePage = () => {
 
     const installments = data.installments || [];
 
+    const getCollectedByName = (collectedBy) => {
+        if (!collectedBy) return '-';
+        if (typeof collectedBy === 'object') return formatName(collectedBy);
+        return formatName(staffMap[collectedBy] || collectedBy);
+    };
+
     return (
         <div className="space-y-6 pb-12 animate-in fade-in duration-300">
             {/* Header */}
@@ -251,10 +257,10 @@ const EmiSchedulePage = () => {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-4">
-                                                {row.status === 'Paid' ? formatDate(row.paidOn || row.paidDate || row.paymentDate) : '-'}
+                                                {row.status === 'Paid' ? formatPaidDate(row.paidOn) : '-'}
                                             </td>
                                             <td className="px-4 py-4">
-                                                {row.status === 'Paid' && row.collectedBy ? (staffMap[row.collectedBy] || row.collectedBy.name || row.collectedBy.fullName || row.collectedBy) : '-'}
+                                                {row.status === 'Paid' ? getCollectedByName(row.collectedBy) : '-'}
                                             </td>
                                         </tr>
                                     );

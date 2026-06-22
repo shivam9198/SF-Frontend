@@ -9,6 +9,7 @@ import { customerService } from '../../services/api/customerService';
 import { loanService } from '../../services/api/loanService';
 import { paymentService } from '../../services/api/paymentService';
 import api from '../../services/api/axios';
+import { formatName } from '../../utils/format';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount || 0);
 
@@ -88,7 +89,7 @@ const RecordPaymentPage = () => {
 
                         let matches = false;
                         if (cName.toLowerCase().includes(term) ||
-                            cPhone.includes(term) ||
+                            cPhone.toLowerCase().includes(term) ||
                             String(cId).toLowerCase().includes(term) ||
                             displayCId.toLowerCase().includes(term) ||
                             String(lId).toLowerCase().includes(term) ||
@@ -203,7 +204,7 @@ const RecordPaymentPage = () => {
 
     const handleSelectCustomer = (customer) => {
         setSelectedCustomer(customer);
-        setCustomerSearch(`${customer.name} (${customer.phone})`);
+        setCustomerSearch(`${formatName(customer.name)} (${customer.phone})`);
         setShowResults(false);
         // Reset subsequent steps
         setSelectedLoan(null);
@@ -300,6 +301,7 @@ const RecordPaymentPage = () => {
                 customerPhone: selectedCustomer.phone,
                 amount: Number(formData.amountPaid),
                 paymentMethod: formData.paymentMethod,
+                paidOn: formData.paymentDate,
                 paymentDate: formData.paymentDate,
                 emiNumber: selectedEmi.emiNumber,
                 referenceNumber: formData.referenceNumber,
@@ -410,7 +412,7 @@ const RecordPaymentPage = () => {
                                                         className="cursor-pointer px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                                                     >
                                                         <div className="flex justify-between items-center">
-                                                            <span className="font-medium text-slate-900 dark:text-white">{customer.name}</span>
+                                                            <span className="font-medium text-slate-900 dark:text-white">{formatName(customer.name)}</span>
                                                             <span className="text-xs font-semibold text-sky-600 bg-sky-50 dark:bg-sky-900/30 px-2 py-0.5 rounded">{customer.id}</span>
                                                         </div>
                                                         <div className="text-xs text-slate-500 mt-1">
@@ -569,7 +571,7 @@ const RecordPaymentPage = () => {
                                     <div className="border-b border-slate-200 pb-4 dark:border-slate-700">
                                         <div className="flex justify-between mb-2">
                                             <span className="text-slate-600 dark:text-slate-400">Customer</span>
-                                            <span className="font-medium text-slate-900 dark:text-white">{selectedCustomer.name}</span>
+                                            <span className="font-medium text-slate-900 dark:text-white">{formatName(selectedCustomer.name)}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-slate-600 dark:text-slate-400">Loan ID</span>

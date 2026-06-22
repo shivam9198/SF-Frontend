@@ -98,7 +98,7 @@ export const getDashboardData = async () => {
         const amt = Number(inst.amount || 0);
         if (inst.status === 'Paid') {
             paidInstallments++;
-            const pDateStr = inst.paidOn || inst.paymentDate || inst.paidDate || inst.updatedAt || inst.createdAt || '';
+            const pDateStr = inst.paidOn || '';
             let pDateObj = new Date();
             if (pDateStr) {
                 pDateObj = new Date(pDateStr);
@@ -130,6 +130,7 @@ export const getDashboardData = async () => {
                 emiNumber: inst.emiNumber || inst.installmentNumber || 1,
                 amount: amt,
                 date: pDateStr,
+                paidOn: pDateStr,
                 method: inst.paymentMode || inst.method || 'Cash',
                 status: 'Paid',
                 collectedBy: resolvedCollectedBy

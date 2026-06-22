@@ -4,8 +4,25 @@ import { FiArrowLeft, FiSave, FiUploadCloud, FiCheckCircle, FiXCircle, FiX, FiFi
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
-import { customerService } from '../../services/api/customerService';
 import api from '../../services/api/axios';
+
+const documentTypeOptions = [
+    { value: 'Aadhaar', label: 'Aadhaar Card' },
+    { value: 'PAN', label: 'PAN Card' },
+    { value: 'DL', label: 'Driving License' },
+    { value: 'Voter ID', label: 'Voter ID' }
+];
+
+const invalidInputClass = 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-100 dark:border-red-500 dark:bg-red-950/30';
+
+const normalizeDocumentType = (value) => {
+    const mappings = {
+        'PAN Card': 'PAN',
+        'Driving License': 'DL'
+    };
+
+    return mappings[value] || value;
+};
 
 const AddCustomerPage = () => {
     const navigate = useNavigate();
@@ -28,6 +45,8 @@ const AddCustomerPage = () => {
     const [fileName, setFileName] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: '' }
+    const [validationErrors, setValidationErrors] = useState({});
+    const [touchedFields, setTouchedFields] = useState({});
 
     // Track if form has unsaved changes
     const hasUnsavedChanges = useMemo(() => {
@@ -53,21 +72,29 @@ const AddCustomerPage = () => {
         if (id === 'phone' || id === 'altPhone') {
             const rawPhone = value.replace(/\D/g, '').slice(0, 10);
             setFormData(prev => ({ ...prev, [id]: rawPhone }));
+            setValidationErrors(prev => ({ ...prev, [id]: undefined }));
             return;
         }
 
         if (id === 'pinCode') {
             const rawPin = value.replace(/\D/g, '').slice(0, 6);
             setFormData(prev => ({ ...prev, [id]: rawPin }));
+            setValidationErrors(prev => ({ ...prev, [id]: undefined }));
             return;
         }
 
         setFormData(prev => ({ ...prev, [id]: value }));
+        setValidationErrors(prev => ({ ...prev, [id]: undefined }));
     };
 
     const handleAadhaarChange = (e) => {
         const rawAadhaar = e.target.value.replace(/\D/g, '').slice(0, 12);
         setFormData(prev => ({ ...prev, aadhaar: rawAadhaar }));
+    };
+
+    const handleBlur = (e) => {
+        const { id } = e.target;
+        setTouchedFields(prev => ({ ...prev, [id]: true }));
     };
 
     // Derived Aadhaar display value
@@ -103,19 +130,42 @@ const AddCustomerPage = () => {
         if (fileInput) fileInput.value = '';
     };
 
-    // Validation
-    const isFormValid = useMemo(() => {
-        return (
-            formData.name.trim() !== '' &&
-            formData.phone.length === 10 &&
-            formData.aadhaar.length === 12 &&
-            formData.address.trim() !== '' &&
-            formData.city.trim() !== '' &&
-            formData.state.trim() !== '' &&
-            formData.pinCode.length === 6 &&
-            formData.docType !== ''
-        );
-    }, [formData]);
+    const validateForm = () => {
+        const errors = {};
+
+        if (!formData.name.trim()) {
+            errors.name = 'Full Name is required';
+        }
+
+        if (!formData.phone.trim()) {
+            errors.phone = 'Phone Number is required';
+        } else if (formData.phone.length !== 10) {
+            errors.phone = 'Phone Number must be exactly 10 digits';
+        }
+
+        if (!formData.city.trim()) {
+            errors.city = 'City is required';
+        }
+
+        if (!formData.state.trim()) {
+            errors.state = 'State is required';
+        }
+
+        if (!formData.pinCode.trim()) {
+            errors.pinCode = 'PIN Code is required';
+        } else if (formData.pinCode.length !== 6) {
+            errors.pinCode = 'PIN Code must be exactly 6 digits';
+        }
+
+        return errors;
+    };
+
+    const getFieldError = (field) => {
+        if (!touchedFields[field] && !validationErrors[field]) return '';
+        return validationErrors[field] || validateForm()[field] || '';
+    };
+
+    const fieldClassName = (field) => getFieldError(field) ? invalidInputClass : '';
 
     const showToast = (type, message) => {
         setToast({ type, message });
@@ -124,7 +174,19 @@ const AddCustomerPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!isFormValid) return;
+        const errors = validateForm();
+        if (Object.keys(errors).length > 0) {
+            setValidationErrors(errors);
+            setTouchedFields(prev => ({
+                ...prev,
+                name: true,
+                phone: true,
+                city: true,
+                state: true,
+                pinCode: true
+            }));
+            return;
+        }
 
         setIsSubmitting(true);
         try {
@@ -139,7 +201,7 @@ const AddCustomerPage = () => {
                     state: formData.state,
                     pincode: formData.pinCode
                 },
-                kycDocumentType: formData.docType,
+                kycDocumentType: normalizeDocumentType(formData.docType),
                 kycDocumentImage: filePreview || ""
             };
 
@@ -168,6 +230,8 @@ const AddCustomerPage = () => {
             name: '', phone: '', altPhone: '', aadhaar: '',
             address: '', city: '', state: '', pinCode: '', docType: 'Aadhaar'
         });
+        setValidationErrors({});
+        setTouchedFields({});
         removeFile();
     };
 
@@ -207,8 +271,13 @@ const AddCustomerPage = () => {
                                     id="name" 
                                     value={formData.name} 
                                     onChange={handleChange} 
+                                    onBlur={handleBlur}
                                     placeholder="Enter full name" 
+                                    className={fieldClassName('name')}
                                 />
+                                {getFieldError('name') && (
+                                    <p className="mt-1 text-xs font-medium text-red-500">{getFieldError('name')}</p>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -218,11 +287,13 @@ const AddCustomerPage = () => {
                                         id="phone" 
                                         value={formData.phone} 
                                         onChange={handleChange} 
+                                        onBlur={handleBlur}
                                         placeholder="10-digit mobile number" 
                                         maxLength={10}
+                                        className={fieldClassName('phone')}
                                     />
-                                    {formData.phone && formData.phone.length !== 10 && (
-                                        <p className="mt-1 text-xs text-red-500">Must be exactly 10 digits</p>
+                                    {getFieldError('phone') && (
+                                        <p className="mt-1 text-xs font-medium text-red-500">{getFieldError('phone')}</p>
                                     )}
                                 </div>
                                 <div>
@@ -274,21 +345,31 @@ const AddCustomerPage = () => {
                                     <Input 
                                         label="City *" 
                                         id="city" 
-                                        value={formData.city} 
-                                        onChange={handleChange} 
-                                        placeholder="Enter city" 
-                                    />
-                                </div>
-                                <div>
-                                    <Input 
+                                    value={formData.city} 
+                                    onChange={handleChange} 
+                                    onBlur={handleBlur}
+                                    placeholder="Enter city" 
+                                    className={fieldClassName('city')}
+                                />
+                                {getFieldError('city') && (
+                                    <p className="mt-1 text-xs font-medium text-red-500">{getFieldError('city')}</p>
+                                )}
+                            </div>
+                            <div>
+                                <Input 
                                         label="State *" 
                                         id="state" 
-                                        value={formData.state} 
-                                        onChange={handleChange} 
-                                        placeholder="Enter state" 
-                                    />
-                                </div>
+                                    value={formData.state} 
+                                    onChange={handleChange} 
+                                    onBlur={handleBlur}
+                                    placeholder="Enter state" 
+                                    className={fieldClassName('state')}
+                                />
+                                {getFieldError('state') && (
+                                    <p className="mt-1 text-xs font-medium text-red-500">{getFieldError('state')}</p>
+                                )}
                             </div>
+                        </div>
 
                             <div>
                                 <Input 
@@ -296,11 +377,13 @@ const AddCustomerPage = () => {
                                     id="pinCode" 
                                     value={formData.pinCode} 
                                     onChange={handleChange} 
+                                    onBlur={handleBlur}
                                     placeholder="6-digit PIN code" 
                                     maxLength={6}
+                                    className={fieldClassName('pinCode')}
                                 />
-                                {formData.pinCode && formData.pinCode.length !== 6 && (
-                                    <p className="mt-1 text-xs text-red-500">Must be exactly 6 digits</p>
+                                {getFieldError('pinCode') && (
+                                    <p className="mt-1 text-xs font-medium text-red-500">{getFieldError('pinCode')}</p>
                                 )}
                             </div>
 
@@ -312,12 +395,7 @@ const AddCustomerPage = () => {
                                     id="docType"
                                     value={formData.docType}
                                     onChange={handleChange}
-                                    options={[
-                                        { value: 'Aadhaar', label: 'Aadhaar Card' },
-                                        { value: 'PAN Card', label: 'PAN Card' },
-                                        { value: 'Driving License', label: 'Driving License' },
-                                        { value: 'Voter ID', label: 'Voter ID' }
-                                    ]}
+                                    options={documentTypeOptions}
                                 />
                             </div>
 
@@ -394,7 +472,7 @@ const AddCustomerPage = () => {
                         </Button>
                         <Button 
                             type="submit" 
-                            disabled={!isFormValid || isSubmitting}
+                            disabled={isSubmitting}
                             className="w-full sm:w-auto min-w-[140px] flex justify-center items-center gap-2"
                         >
                             {isSubmitting ? 'Saving...' : <><FiSave /> Save Customer</>}

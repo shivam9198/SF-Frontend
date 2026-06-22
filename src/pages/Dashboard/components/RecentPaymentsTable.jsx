@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Badge from '../../../components/common/Badge'
 import Button from '../../../components/common/Button'
 import EmptyState from '../../../components/common/EmptyState'
-import { formatCurrency, formatDate, formatId } from '../../../utils/format'
+import { formatCurrency, formatDate, formatId, formatName, formatPaidDate } from '../../../utils/format'
 
 const STATUS_VARIANT = {
     Received: 'success',
@@ -75,7 +75,7 @@ function RecentPaymentsTable({ payments }) {
                                 {paginated.map((payment) => (
                                     <tr key={payment.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
                                         <td className="px-4 py-4">
-                                            <p className="font-medium text-slate-900 dark:text-slate-100">{payment.customer}</p>
+                                            <p className="font-medium text-slate-900 dark:text-slate-100">{formatName(payment.customer)}</p>
                                         </td>
                                         <td className="px-4 py-4 text-slate-500 dark:text-slate-400">
                                             {formatId(payment.customerDisplayId)}
@@ -95,11 +95,11 @@ function RecentPaymentsTable({ payments }) {
                                         <td className="px-4 py-4 text-center text-slate-500 dark:text-slate-400">{payment.emiNumber}</td>
                                         <td className="px-4 py-4 font-semibold text-right text-slate-900 dark:text-slate-100">{formatCurrency(payment.amount)}</td>
                                         <td className="px-4 py-4 text-slate-500 dark:text-slate-400">{payment.method}</td>
-                                        <td className="px-4 py-4 text-slate-500 dark:text-slate-400">{payment.date ? formatDate(payment.date) : '-'}</td>
+                                        <td className="px-4 py-4 text-slate-500 dark:text-slate-400">{formatPaidDate(payment.paidOn)}</td>
                                         <td className="px-4 py-4">
                                             <Badge variant={STATUS_VARIANT[payment.status] || 'primary'}>{payment.status}</Badge>
                                         </td>
-                                        <td className="px-4 py-4 text-slate-500 dark:text-slate-400">{payment.collectedBy || 'System'}</td>
+                                        <td className="px-4 py-4 text-slate-500 dark:text-slate-400">{formatName(payment.collectedBy || 'System')}</td>
                                     </tr>
                                 ))}
                             </tbody>

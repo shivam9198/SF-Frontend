@@ -17,6 +17,12 @@ export function ThemeProvider({ children }) {
             setTheme(stored)
             document.documentElement.classList.toggle('dark', stored === 'dark')
         }
+
+        const frame = window.requestAnimationFrame(() => {
+            document.documentElement.classList.add('theme-ready')
+        })
+
+        return () => window.cancelAnimationFrame(frame)
     }, [])
 
     useEffect(() => {
@@ -24,11 +30,20 @@ export function ThemeProvider({ children }) {
         window.localStorage.setItem(THEME_KEY, theme)
     }, [theme])
 
+    const setThemeWithAnimation = (nextTheme) => {
+        document.documentElement.classList.add('theme-switching')
+        window.setTimeout(() => {
+            document.documentElement.classList.remove('theme-switching')
+        }, 280)
+
+        setTheme(nextTheme)
+    }
+
     const value = useMemo(
         () => ({
             theme,
-            setTheme,
-            toggleTheme: () => setTheme((current) => (current === 'dark' ? 'light' : 'dark')),
+            setTheme: setThemeWithAnimation,
+            toggleTheme: () => setThemeWithAnimation(theme === 'dark' ? 'light' : 'dark'),
         }),
         [theme],
     )

@@ -3,7 +3,54 @@
 @tailwind utilities;
 
 @layer base {
+  html.theme-ready,
+  html.theme-ready *,
+  html.theme-ready *::before,
+  html.theme-ready *::after {
+    transition:
+      background-color 300ms ease,
+      color 300ms ease,
+      border-color 300ms ease,
+      box-shadow 300ms ease;
+  }
+
+  html.theme-ready body {
+    transition:
+      background-color 300ms ease,
+      color 300ms ease,
+      border-color 300ms ease,
+      box-shadow 300ms ease,
+      opacity 220ms ease;
+  }
+
+  html.theme-switching body {
+    animation: theme-fade 260ms ease;
+  }
+
   body {
     @apply antialiased text-slate-900 bg-slate-50 dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html.theme-ready,
+    html.theme-ready *,
+    html.theme-ready *::before,
+    html.theme-ready *::after,
+    html.theme-ready body {
+      transition: none;
+    }
+
+    html.theme-switching body {
+      animation: none;
+    }
+  }
+
+  @keyframes theme-fade {
+    from {
+      opacity: 0.98;
+    }
+    to {
+      opacity: 1;
+    }
   }
 }

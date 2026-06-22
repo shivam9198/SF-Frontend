@@ -6,6 +6,7 @@ import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import api from '../../services/api/axios';
+import { formatName } from '../../utils/format';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount || 0);
 
@@ -149,7 +150,7 @@ const LoanDetailsPage = () => {
             .filter(e => e.status === 'Paid')
             .map(e => ({
                 title: `EMI ${e.emiNumber} Paid`,
-                date: e.paidDate,
+                date: e.paidOn,
                 type: 'success'
             }))
     ];
@@ -163,7 +164,7 @@ const LoanDetailsPage = () => {
             timelineEvents.push({ title: `Awaiting EMI ${nextEmi.emiNumber}`, date: nextEmi.dueDate, type: 'pending' });
         }
     } else if (schedule.length > 0) {
-        timelineEvents.push({ title: 'Loan Completed', date: schedule[schedule.length - 1].paidDate, type: 'success' });
+        timelineEvents.push({ title: 'Loan Completed', date: schedule[schedule.length - 1].paidOn, type: 'success' });
     }
 
     return (
@@ -260,7 +261,7 @@ const LoanDetailsPage = () => {
                                 <SummaryItem
                                     icon={<FiUser />}
                                     label="Customer Name"
-                                    value={loan.customer?.fullName || loan.customer?.name || loan.customerName || 'Unknown Customer'}
+                                    value={formatName(loan.customer?.fullName || loan.customer?.name || loan.customerName || 'Unknown Customer')}
                                     subValue={`${loan.customer?._id ? `CUS-${String(loan.customer._id).slice(-6).toUpperCase()}` : (loan.customerId ? `CUS-${String(typeof loan.customerId === 'object' ? (loan.customerId._id || loan.customerId.id) : loan.customerId).slice(-6).toUpperCase()}` : 'N/A')} • ${loan.customer?.phone || loan.phone || 'N/A'}`}
                                 />
                                 <SummaryItem icon={<FiSmartphone />} label="Product Name" value={loan.productName} subValue={`IMEI: ${loan.imeiNumber}`} />

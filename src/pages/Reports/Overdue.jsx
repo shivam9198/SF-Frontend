@@ -7,7 +7,7 @@ import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import EmptyState from '../../components/common/EmptyState';
 import { overdueService } from '../../services/api/overdueService';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency, formatDate, formatName } from '../../utils/format';
 
 const OverduePage = () => {
     const navigate = useNavigate();
@@ -38,10 +38,10 @@ const OverduePage = () => {
         let result = [...accounts];
 
         if (searchTerm) {
-            const term = searchTerm.toLowerCase();
+            const term = searchTerm.toLowerCase().trim();
             result = result.filter(a =>
                 (a.customerName && a.customerName.toLowerCase().includes(term)) ||
-                (a.phone && a.phone.includes(term)) ||
+                (a.phone && a.phone.toLowerCase().includes(term)) ||
                 (a.loanId && a.loanId.toLowerCase().includes(term)) ||
                 (a.customerId && a.customerId.toLowerCase().includes(term))
             );
@@ -80,7 +80,7 @@ const OverduePage = () => {
         const rows = [
             ['Customer Name', 'Phone Number', 'Loan', 'EMI Amount', 'Due Date', 'Days Late', 'Outstanding Amount'],
             ...filteredAccounts.map((account) => [
-                account.customerName,
+                formatName(account.customerName),
                 account.phone,
                 account.loanId,
                 account.amount,
@@ -102,7 +102,7 @@ const OverduePage = () => {
         {
             key: 'customerName', label: 'Customer Name', render: (r) => (
                 <div>
-                    <p className="text-base font-semibold text-slate-900 dark:text-white">{r.customerName}</p>
+                    <p className="text-base font-semibold text-slate-900 dark:text-white">{formatName(r.customerName)}</p>
                     <p className="text-sm text-slate-500">{r.loanId} • EMI {r.emiNumber}</p>
                 </div>
             )
@@ -214,7 +214,7 @@ const OverduePage = () => {
                                 <div key={acc.id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
-                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{acc.customerName}</h3>
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{formatName(acc.customerName)}</h3>
                                             <a href={`tel:${acc.phone}`} className="text-base font-semibold text-emerald-700 dark:text-emerald-400">{acc.phone}</a>
                                         </div>
                                         <span className="rounded-full bg-red-50 px-3 py-1 text-sm font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300">

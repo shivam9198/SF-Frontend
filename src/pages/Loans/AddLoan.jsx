@@ -7,6 +7,7 @@ import Select from '../../components/common/Select';
 import { loanService } from '../../services/api/loanService';
 import { customerService } from '../../services/api/customerService';
 import api from '../../services/api/axios';
+import { formatName } from '../../utils/format';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount || 0);
 
@@ -106,11 +107,17 @@ const AddLoanPage = () => {
                 try {
                     const response = await api.get('/customers');
                     const allCustomers = response.data.customers || response.data;
-                    const filtered = allCustomers.filter(c =>
-                        (c.fullName || c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
-                        (c.phone || '').includes(customerSearch) ||
-                        (c._id || c.id || '').toLowerCase().includes(customerSearch.toLowerCase())
-                    );
+                    const term = customerSearch.toLowerCase().trim();
+                    const filtered = allCustomers.filter(c => {
+                        const customerId = c._id || c.id || '';
+                        const displayId = customerId ? `CUS-${String(customerId).slice(-6).toUpperCase()}` : '';
+                        return (
+                            (c.fullName || c.name || '').toLowerCase().includes(term) ||
+                            (c.phone || '').toLowerCase().includes(term) ||
+                            String(customerId).toLowerCase().includes(term) ||
+                            displayId.toLowerCase().includes(term)
+                        );
+                    });
                     setSearchResults(filtered);
                 } catch (err) {
                     console.error('Search failed', err);
@@ -128,7 +135,7 @@ const AddLoanPage = () => {
 
     const handleSelectCustomer = (customer) => {
         setSelectedCustomer(customer);
-        setCustomerSearch(`${customer.fullName || customer.name} (${customer.phone})`);
+        setCustomerSearch(`${formatName(customer.fullName || customer.name)} (${customer.phone})`);
         setShowResults(false);
     };
 
@@ -311,7 +318,7 @@ const AddLoanPage = () => {
                                                         className="cursor-pointer px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50"
                                                     >
                                                         <div className="flex justify-between items-center">
-                                                            <span className="font-medium text-slate-900 dark:text-white">{customer.fullName || customer.name}</span>
+                                                            <span className="font-medium text-slate-900 dark:text-white">{formatName(customer.fullName || customer.name)}</span>
                                                             <span className="text-xs font-semibold text-sky-600 bg-sky-50 dark:bg-sky-900/30 px-2 py-0.5 rounded">{customer._id ? `CUS-${String(customer._id).slice(-6).toUpperCase()}` : customer.id}</span>
                                                         </div>
                                                         <div className="text-xs text-slate-500 mt-1">

@@ -7,6 +7,7 @@ import Table from '../../components/common/Table';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import api from '../../services/api/axios';
+import { formatName } from '../../utils/format';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount || 0);
 
@@ -78,11 +79,14 @@ function LoansPage() {
 
     const filteredLoans = useMemo(() => {
         if (!searchTerm) return loans;
-        const lower = searchTerm.toLowerCase();
+        const lower = searchTerm.toLowerCase().trim();
         return loans.filter(loan =>
             (loan.customer?.fullName || loan.customer?.name || loan.customerName || '').toLowerCase().includes(lower) ||
-            (loan.customer?.phone || loan.phone || '').includes(searchTerm) ||
-            (loan._id || loan.id || '').toLowerCase().includes(lower) ||
+            (loan.customer?.phone || loan.phone || '').toLowerCase().includes(lower) ||
+            (loan.customer?._id || loan.customer?.id || loan.customerId || '').toString().toLowerCase().includes(lower) ||
+            (loan.customer?._id || loan.customer?.id || loan.customerId ? `CUS-${String(loan.customer?._id || loan.customer?.id || loan.customerId).slice(-6).toUpperCase()}` : '').toLowerCase().includes(lower) ||
+            (loan._id || loan.id || '').toString().toLowerCase().includes(lower) ||
+            (loan._id || loan.id ? `LOAN-${String(loan._id || loan.id).slice(-6).toUpperCase()}` : '').toLowerCase().includes(lower) ||
             (loan.productName || '').toLowerCase().includes(lower)
         );
     }, [loans, searchTerm]);
@@ -107,7 +111,7 @@ function LoansPage() {
                 const displayCusId = customerId ? `CUS-${String(customerId).slice(-6).toUpperCase()}` : 'N/A';
                 return (
                     <div>
-                        <p className="font-medium text-slate-900 dark:text-white">{fullName}</p>
+                        <p className="font-medium text-slate-900 dark:text-white">{formatName(fullName)}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">{displayCusId} • {phone}</p>
                     </div>
                 );
@@ -243,7 +247,7 @@ function LoansPage() {
                                 <div key={loan._id || loan.id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
                                     <div className="flex justify-between items-start mb-3">
                                         <div className="overflow-hidden pr-2">
-                                            <h3 className="font-semibold text-slate-900 dark:text-white truncate">{loan.customer?.fullName || loan.customer?.name || loan.customerName || 'Unknown Customer'}</h3>
+                                            <h3 className="font-semibold text-slate-900 dark:text-white truncate">{formatName(loan.customer?.fullName || loan.customer?.name || loan.customerName || 'Unknown Customer')}</h3>
                                             <p className="text-xs text-slate-500 truncate">{displayId} • {displayCusId} • {loan.customer?.phone || loan.phone || 'N/A'}</p>
                                         </div>
                                         <Badge variant={outstanding <= 0 ? 'success' : 'primary'} className="shrink-0">

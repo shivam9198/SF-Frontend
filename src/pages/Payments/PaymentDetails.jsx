@@ -6,7 +6,7 @@ import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import Logo from '../../components/common/Logo';
 import api from '../../services/api/axios';
-import { formatCurrency, formatId } from '../../utils/format';
+import { formatCurrency, formatId, formatName, formatPaidDate } from '../../utils/format';
 
 const PaymentDetailsPage = () => {
     const { paymentId } = useParams();
@@ -71,7 +71,7 @@ const PaymentDetailsPage = () => {
     };
 
     const handleShare = async () => {
-        const text = `Receipt ${payment.id}: ${payment.customerName} paid ${formatCurrency(payment.amount)} for loan ${payment.loanId}.`;
+        const text = `Receipt ${payment.id}: ${formatName(payment.customerName)} paid ${formatCurrency(payment.amount)} for loan ${payment.loanId}.`;
         if (navigator.share) {
             await navigator.share({ title: 'Payment Receipt', text });
             return;
@@ -141,7 +141,7 @@ const PaymentDetailsPage = () => {
                     </div>
                     <div className="text-right">
                         <p className="text-sm font-semibold text-slate-900 dark:text-white print:text-black">Receipt No: {payment.id}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 print:text-slate-600 mt-1">Date: {formatDate(payment.paymentDate)}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 print:text-slate-600 mt-1">Date: {formatPaidDate(payment.paidOn)}</p>
                     </div>
                 </div>
 
@@ -158,7 +158,7 @@ const PaymentDetailsPage = () => {
                     <div>
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 print:text-slate-500">Customer Details</h4>
                         <div className="space-y-2 text-sm">
-                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Name: </span><span className="font-semibold text-slate-900 dark:text-white print:text-black">{typeof payment.customerName === 'object' ? (payment.customerName.fullName || payment.customerName.name || 'Unknown') : payment.customerName}</span></p>
+                            <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Name: </span><span className="font-semibold text-slate-900 dark:text-white print:text-black">{formatName(typeof payment.customerName === 'object' ? (payment.customerName.fullName || payment.customerName.name || 'Unknown') : payment.customerName)}</span></p>
                             <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Phone: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{typeof loan.phone === 'object' ? loan.phone.toString() : (loan.phone || payment.customerPhone || (typeof loan.customerId === 'object' ? loan.customerId.phone : '') || 'N/A')}</span></p>
                             <p className="flex justify-between md:block"><span className="text-slate-500 md:hidden">Customer ID: </span><span className="text-slate-600 dark:text-slate-300 print:text-slate-700">{formatId((typeof loan.customerId === 'object' ? (loan.customerId.id || loan.customerId._id) : loan.customerId) || (typeof loan.customer === 'object' ? (loan.customer.customerId || loan.customer.id || loan.customer._id) : loan.customer))}</span></p>
                         </div>
@@ -191,7 +191,7 @@ const PaymentDetailsPage = () => {
                         )}
                         <div>
                             <p className="text-slate-500 dark:text-slate-400 print:text-slate-600 mb-1">Collected By</p>
-                            <p className="font-medium text-slate-900 dark:text-white print:text-black">{payment.collectedBy}</p>
+                            <p className="font-medium text-slate-900 dark:text-white print:text-black">{formatName(payment.collectedBy)}</p>
                         </div>
                         {payment.notes && (
                             <div className="col-span-2">

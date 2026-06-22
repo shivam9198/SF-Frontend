@@ -11,7 +11,7 @@ import ErrorState from '../../components/common/ErrorState';
 import EmptyState from '../../components/common/EmptyState';
 import api from '../../services/api/axios';
 import EmiCalendar from './components/EmiCalendar';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatId, formatName, formatPaidDate } from '../../utils/format';
 
 const EmiSchedulePage = () => {
     const params = useParams();
@@ -86,12 +86,14 @@ const EmiSchedulePage = () => {
                                 customerObj = loan.customerId;
                             }
                             const cName = customerObj?.fullName || customerObj?.name || loan.customerName || 'Unknown';
+                            const customerId = customerObj?._id || customerObj?.id || (typeof loan.customerId === 'string' ? loan.customerId : loan.customerId?._id || loan.customerId?.id);
                             const displayLoanId = loan._id ? `LOAN-${String(loan._id).slice(-6).toUpperCase()}` : (loan.id || id);
 
                             return insts.map(inst => ({
                                 ...inst,
                                 loanId: displayLoanId,
                                 rawLoanId: id,
+                                customerId,
                                 customerName: cName
                             }));
                         } catch (e) {
@@ -126,7 +128,7 @@ const EmiSchedulePage = () => {
 
         // Search by EMI Number or Customer/Loan ID for global
         if (searchTerm) {
-            const term = searchTerm.toLowerCase();
+            const term = searchTerm.toLowerCase().trim();
             result = result.filter(e =>
                 e.emiNumber?.toString().includes(term) ||
                 (e.customerName && e.customerName.toLowerCase().includes(term)) ||
@@ -168,7 +170,8 @@ const EmiSchedulePage = () => {
     const columns = [
         ...(loanId ? [] : [
             { key: 'loanId', label: 'Loan ID', render: (r) => <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{r.loanId}</span> },
-            { key: 'customerName', label: 'Customer', render: (r) => <span className="text-sm">{r.customerName}</span> },
+            { key: 'customerName', label: 'Customer', render: (r) => <span className="text-sm">{formatName(r.customerName)}</span> },
+            { key: 'customerId', label: 'Customer ID', render: (r) => <span className="text-sm text-slate-500 dark:text-slate-400">{formatId(r.customerId)}</span> },
         ]),
         { key: 'emiNumber', label: 'EMI No.', render: (r) => <span className="font-semibold text-sky-600 dark:text-sky-400">#{r.emiNumber}</span> },
         { key: 'dueDate', label: 'Due Date', render: (r) => new Date(r.dueDate).toLocaleDateString() },
@@ -189,8 +192,8 @@ const EmiSchedulePage = () => {
                 );
             }
         },
-        { key: 'paidDate', label: 'Paid Date', render: (r) => r.paidDate ? new Date(r.paidDate).toLocaleDateString() : '-' },
-        { key: 'collectedBy', label: 'Collected By', render: (r) => r.collectedBy || '-' },
+        { key: 'paidDate', label: 'Paid Date', render: (r) => formatPaidDate(r.paidOn) },
+        { key: 'collectedBy', label: 'Collected By', render: (r) => formatName(r.collectedBy) },
         {
             key: 'actions',
             label: 'Actions',
@@ -332,7 +335,7 @@ const EmiSchedulePage = () => {
                                             <div className="text-sm text-slate-600 dark:text-slate-400 mb-4 space-y-1">
                                                 <p className="font-medium text-slate-900 dark:text-white text-lg">{formatCurrency(emi.amount)}</p>
                                                 {emi.status === 'Paid' ? (
-                                                    <p>Paid on: {new Date(emi.paidDate).toLocaleDateString()} by {emi.collectedBy}</p>
+                                                    <p>Paid on: {formatPaidDate(emi.paidOn)} by {formatName(emi.collectedBy)}</p>
                                                 ) : (
                                                     <p className="text-slate-400 italic">Not paid yet</p>
                                                 )}

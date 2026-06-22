@@ -31,7 +31,9 @@ const PaymentDonut = ({ data }) => {
                         </PieChart>
                     </ResponsiveContainer>
                 ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-slate-500">No payment data</div>
+                    <div className="flex h-full items-center justify-center rounded-xl bg-slate-50 text-sm font-medium text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
+                        No data available
+                    </div>
                 )}
             </div>
         </div>

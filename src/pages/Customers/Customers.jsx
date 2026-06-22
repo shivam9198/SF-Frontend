@@ -11,6 +11,7 @@ import EmptyState from '../../components/common/EmptyState';
 import ErrorState from '../../components/common/ErrorState';
 import api from '../../services/api/axios';
 import { AuthContext } from '../../context/AuthContext';
+import { formatName } from '../../utils/format';
 
 const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount || 0);
 
@@ -215,7 +216,7 @@ const CustomersPage = () => {
             ['Customer ID', 'Name', 'Phone', 'City', 'Loans', 'Outstanding', 'Status'],
             ...filteredCustomers.map((customer) => [
                 formatId(customer._id),
-                customer.fullName,
+                formatName(customer.fullName),
                 customer.phone,
                 customer.address?.city || '',
                 customer.loans || 0,
@@ -234,7 +235,7 @@ const CustomersPage = () => {
 
     const columns = [
         { key: 'id', label: 'ID', render: (row) => <span className="font-semibold text-sky-600 dark:text-sky-400">{formatId(row._id)}</span> },
-        { key: 'name', label: 'Customer', render: (row) => row.fullName },
+        { key: 'name', label: 'Customer', render: (row) => formatName(row.fullName) },
         { key: 'phone', label: 'Phone' },
         { key: 'city', label: 'City', render: (row) => row.address?.city || '-' },
         { key: 'loans', label: 'Loans', render: (row) => row.loans || 0 },
@@ -372,7 +373,7 @@ const CustomersPage = () => {
                                 <div key={customer._id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <h3 className="font-semibold text-slate-900 dark:text-white">{customer.fullName}</h3>
+                                            <h3 className="font-semibold text-slate-900 dark:text-white">{formatName(customer.fullName)}</h3>
                                             <p className="text-sm text-slate-500">{formatId(customer._id)}</p>
                                         </div>
                                         <Badge variant={status === 'Active' ? 'success' : status === 'Overdue' ? 'warning' : 'primary'}>

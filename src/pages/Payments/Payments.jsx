@@ -9,7 +9,7 @@ import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import EmptyState from '../../components/common/EmptyState';
 import api from '../../services/api/axios';
-import { formatCurrency, formatId } from '../../utils/format';
+import { formatCurrency, formatId, formatName, formatPaidDate } from '../../utils/format';
 
 const PaymentsPage = () => {
     const navigate = useNavigate();
@@ -58,13 +58,14 @@ const PaymentsPage = () => {
                         }
                         const cName = customerObj?.fullName || customerObj?.name || loan.customerName || 'Unknown';
                         const cPhone = customerObj?.phone || loan.phone || 'N/A';
+                        const customerId = customerObj?._id || customerObj?.id || (typeof loan.customerId === 'string' ? loan.customerId : loan.customerId?._id || loan.customerId?.id);
                         const displayLoanId = loan._id ? `LOAN-${String(loan._id).slice(-6).toUpperCase()}` : (loan.id || id);
 
                         // Only return paid installments as 'payments'
                         return insts.filter(inst => inst.status === 'Paid').map(inst => {
                             const rawId = inst._id || inst.id;
                             const shortId = rawId ? `PAY-${String(rawId).slice(-6).toUpperCase()}` : `PAY-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-                            const pDate = inst.paidOn || inst.paymentDate || inst.paidDate || inst.updatedAt || inst.createdAt || new Date().toISOString();
+                            const paidOn = inst.paidOn || null;
                             let collectorName = inst.collectedBy;
                             if (typeof collectorName === 'object' && collectorName !== null) {
                                 collectorName = collectorName.name || collectorName.username || collectorName.fullName || collectorName._id;
@@ -82,9 +83,10 @@ const PaymentsPage = () => {
                                 rawLoanId: id,
                                 customerName: cName,
                                 customerPhone: cPhone,
+                                customerDisplayId: customerId,
                                 paymentMethod: inst.paymentMode || inst.paymentMethod || 'Cash', // default
-                                paymentDate: pDate,
-                                paidDate: pDate,
+                                paidOn,
+                                paymentDate: paidOn,
                                 collectedBy: collectorName || 'System',
                             };
                         });
@@ -95,7 +97,7 @@ const PaymentsPage = () => {
                 });
 
                 const results = await Promise.all(promises);
-                const paidInstallments = results.flat().sort((a, b) => new Date(b.paidDate) - new Date(a.paidDate));
+                const paidInstallments = results.flat().sort((a, b) => new Date(b.paidOn || 0) - new Date(a.paidOn || 0));
                 setPayments(paidInstallments);
                 setError(null);
             } catch (err) {
@@ -131,11 +133,13 @@ const PaymentsPage = () => {
         let result = [...payments];
 
         if (searchTerm) {
-            const term = searchTerm.toLowerCase();
+            const term = searchTerm.toLowerCase().trim();
             result = result.filter(p =>
-                p.id.toLowerCase().includes(term) ||
-                p.customerName.toLowerCase().includes(term) ||
-                p.loanId.toLowerCase().includes(term)
+                String(p.id || '').toLowerCase().includes(term) ||
+                String(p.customerName || '').toLowerCase().includes(term) ||
+                String(p.customerDisplayId || '').toLowerCase().includes(term) ||
+                formatId(p.customerDisplayId).toLowerCase().includes(term) ||
+                String(p.loanId || '').toLowerCase().includes(term)
             );
         }
 
@@ -165,13 +169,13 @@ const PaymentsPage = () => {
             ['Payment ID', 'Customer', 'Loan', 'EMI', 'Amount', 'Date', 'Method', 'Collected By'],
             ...filteredPayments.map((payment) => [
                 payment.id,
-                payment.customerName,
+                formatName(payment.customerName),
                 payment.loanId,
                 payment.emiNumber,
                 payment.amount,
-                formatDate(payment.paymentDate),
+                formatPaidDate(payment.paidOn),
                 payment.paymentMethod,
-                payment.collectedBy,
+                formatName(payment.collectedBy),
             ]),
         ];
         const blob = new Blob([rows.map((row) => row.join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -195,7 +199,7 @@ const PaymentsPage = () => {
 
     const columns = [
         { key: 'id', label: 'Payment ID', render: (r) => <span className="font-semibold text-sky-600 dark:text-sky-400">{r.id}</span> },
-        { key: 'customerName', label: 'Customer', render: (r) => <span className="font-medium text-slate-900 dark:text-white">{r.customerName}</span> },
+        { key: 'customerName', label: 'Customer', render: (r) => <span className="font-medium text-slate-900 dark:text-white">{formatName(r.customerName)}</span> },
         { key: 'customerId', label: 'Customer ID', render: (r) => <span className="text-slate-500 dark:text-slate-400">{formatId(r.customerDisplayId)}</span> },
         {
             key: 'loan', label: 'Loan / EMI', render: (r) => (
@@ -206,7 +210,7 @@ const PaymentsPage = () => {
             )
         },
         { key: 'amount', label: 'Amount', render: (r) => <span className="font-medium">{formatCurrency(r.amount)}</span> },
-        { key: 'paymentDate', label: 'Date', render: (r) => formatDate(r.paymentDate) },
+        { key: 'paymentDate', label: 'Date', render: (r) => formatPaidDate(r.paidOn) },
         {
             key: 'method', label: 'Method', render: (r) => {
                 const colors = {
@@ -217,7 +221,7 @@ const PaymentsPage = () => {
                 return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${colors[r.paymentMethod] || 'bg-slate-100 text-slate-700'}`}>{r.paymentMethod}</span>;
             }
         },
-        { key: 'collectedBy', label: 'Collected By', render: (r) => <span className="text-sm text-slate-600 dark:text-slate-400">{r.collectedBy}</span> },
+        { key: 'collectedBy', label: 'Collected By', render: (r) => <span className="text-sm text-slate-600 dark:text-slate-400">{formatName(r.collectedBy)}</span> },
         {
             key: 'actions',
             label: '',
@@ -334,7 +338,7 @@ const PaymentsPage = () => {
                                 <div key={payment.id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
-                                            <h3 className="font-semibold text-slate-900 dark:text-white">{payment.customerName}</h3>
+                                            <h3 className="font-semibold text-slate-900 dark:text-white">{formatName(payment.customerName)}</h3>
                                             <p className="text-sm text-slate-500">{payment.loanId} • EMI #{payment.emiNumber}</p>
                                         </div>
                                         <span className="font-semibold text-sky-600 dark:text-sky-400">
@@ -348,8 +352,8 @@ const PaymentsPage = () => {
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between text-xs text-slate-500 mb-4 border-t border-slate-100 dark:border-slate-800 pt-3">
-                                        <span>Date: {formatDate(payment.paymentDate)}</span>
-                                        <span>By: {payment.collectedBy}</span>
+                                        <span>Date: {formatPaidDate(payment.paidOn)}</span>
+                                        <span>By: {formatName(payment.collectedBy)}</span>
                                     </div>
                                     <div className="flex gap-2">
                                         <Button variant="secondary" className="flex-1 text-xs justify-center gap-1" onClick={() => navigate(`/payments/${payment.id}`, { state: { payment, autoPrint: false } })}>

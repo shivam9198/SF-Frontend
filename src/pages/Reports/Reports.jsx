@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FiDownload, FiFileText, FiCreditCard, FiBriefcase, FiCalendar, FiUsers, FiAward } from 'react-icons/fi';
+import { FiFileText, FiCreditCard, FiBriefcase, FiCalendar, FiUsers, FiAward } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
 import Table from '../../components/common/Table';
 import { reportService } from '../../services/api/reportService';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatName } from '../../utils/format';
 import CollectionChart from './components/CollectionChart';
 import PaymentDonut from './components/PaymentDonut';
 
@@ -39,33 +39,8 @@ const ReportsPage = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const [
-                collection, 
-                loan, 
-                emi, 
-                customer, 
-                staff,
-                collectionAnalytics,
-                paymentAnalytics
-            ] = await Promise.all([
-                reportService.getCollectionReport(),
-                reportService.getLoanReport(),
-                reportService.getEmiReport(),
-                reportService.getCustomerReport(),
-                reportService.getStaffReport(),
-                reportService.getCollectionAnalytics(),
-                reportService.getPaymentAnalytics()
-            ]);
-
-            setData({
-                collection,
-                loan,
-                emi,
-                customer,
-                staff,
-                collectionAnalytics,
-                paymentAnalytics
-            });
+            const reports = await reportService.getReports();
+            setData(reports);
         } catch (err) {
             setError(err.message || 'Failed to load reports.');
         } finally {
@@ -90,7 +65,7 @@ const ReportsPage = () => {
     }
 
     const staffColumns = [
-        { key: 'name', label: 'Staff Name' },
+        { key: 'name', label: 'Staff Name', render: (row) => formatName(row.name) },
         { key: 'collectedEmis', label: 'EMIs Collected' },
         { key: 'collectionAmount', label: 'Collection Amount', render: (row) => formatCurrency(row.collectionAmount) },
     ];

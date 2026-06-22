@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { MdClose } from 'react-icons/md';
-import { formatCurrency, formatDate, formatId } from '../../../utils/format';
+import { formatCurrency, formatDate, formatId, formatName, formatPaidDate } from '../../../utils/format';
 
 function CollectionAuditModal({ isOpen, onClose, title, payments, filterMode }) {
     const today = new Date();
@@ -42,7 +42,7 @@ function CollectionAuditModal({ isOpen, onClose, title, payments, filterMode }) 
             }
 
             // Staff summary
-            const staffName = p.collectedBy || 'System';
+            const staffName = formatName(p.collectedBy || 'System');
             if (!staff[staffName]) {
                 staff[staffName] = { count: 0, amount: 0 };
             }
@@ -125,14 +125,14 @@ function CollectionAuditModal({ isOpen, onClose, title, payments, filterMode }) 
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200">
                                     {filteredPayments.map(p => (
                                         <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                            <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{p.customer}</td>
+                                            <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{formatName(p.customer)}</td>
                                             <td className="px-4 py-3">{formatId(p.customerDisplayId || p.customerId || '-')}</td>
                                             <td className="px-4 py-3">{p.loanId}</td>
                                             <td className="px-4 py-3">EMI #{p.emiNumber}</td>
                                             <td className="px-4 py-3 text-right font-semibold">{formatCurrency(p.amount)}</td>
                                             <td className="px-4 py-3">{p.method}</td>
-                                            <td className="px-4 py-3">{p.date ? formatDate(p.date) : '-'}</td>
-                                            <td className="px-4 py-3">{p.collectedBy}</td>
+                                            <td className="px-4 py-3">{formatPaidDate(p.paidOn)}</td>
+                                            <td className="px-4 py-3">{formatName(p.collectedBy)}</td>
                                             <td className="px-4 py-3">
                                                 <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20">
                                                     Paid
