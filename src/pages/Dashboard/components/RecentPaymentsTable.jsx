@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Badge from '../../../components/common/Badge'
 import Button from '../../../components/common/Button'
 import EmptyState from '../../../components/common/EmptyState'
-import { formatCurrency, formatDate, formatId, formatName, formatPaidDate } from '../../../utils/format'
+import { formatCurrency, formatId, formatName, formatPaidDate } from '../../../utils/format'
 
 const STATUS_VARIANT = {
     Received: 'success',

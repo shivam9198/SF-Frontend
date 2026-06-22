@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { MdClose } from 'react-icons/md';
-import { formatCurrency, formatDate, formatId, formatName, formatPaidDate } from '../../../utils/format';
+import { formatCurrency, formatId, formatName, formatPaidDate } from '../../../utils/format';
 
 function CollectionAuditModal({ isOpen, onClose, title, payments, filterMode }) {
     const today = new Date();

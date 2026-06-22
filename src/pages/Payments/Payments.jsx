@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiDownload, FiSearch, FiFilter, FiEye, FiPrinter, FiDollarSign, FiTrendingUp, FiAlertCircle, FiClock, FiCheckCircle } from 'react-icons/fi';
+import { FiPlus, FiDownload, FiSearch, FiEye, FiPrinter, FiDollarSign, FiTrendingUp, FiCheckCircle } from 'react-icons/fi';
 import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Table from '../../components/common/Table';
 import Loader from '../../components/common/Loader';
@@ -16,8 +15,6 @@ const PaymentsPage = () => {
     const [payments, setPayments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [usersMap, setUsersMap] = useState({});
-
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
     const [filterMethod, setFilterMethod] = useState('All');
@@ -36,7 +33,6 @@ const PaymentsPage = () => {
                     usersList.forEach(u => {
                         fetchedUsersMap[u._id] = u.name || u.username || u.fullName || u.email;
                     });
-                    setUsersMap(fetchedUsersMap);
                 } catch (userErr) {
                     console.error('Failed to fetch users', userErr);
                 }
@@ -185,16 +181,6 @@ const PaymentsPage = () => {
         link.download = 'payments.csv';
         link.click();
         URL.revokeObjectURL(url);
-    };
-
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
-        const d = new Date(dateString);
-        if (isNaN(d.getTime())) return '-';
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = String(d.getFullYear()).slice(-2);
-        return `${day}/${month}/${year}`;
     };
 
     const columns = [

@@ -32,9 +32,6 @@ const EmiSchedulePage = () => {
 
     useEffect(() => {
         const fetchSchedule = async () => {
-            console.log("Route Params:", params);
-            console.log("Loan ID:", loanId);
-
             try {
                 setIsLoading(true);
                 let installmentsArray = [];
@@ -42,7 +39,6 @@ const EmiSchedulePage = () => {
                 if (loanId) {
                     const apiUrl = `/loans/${loanId}/installments`;
                     const loanUrl = `/loans/${loanId}`;
-                    console.log("Calling API URL:", apiUrl);
 
                     const [installmentsRes, loanRes] = await Promise.all([
                         api.get(apiUrl),
@@ -69,7 +65,6 @@ const EmiSchedulePage = () => {
                         monthlyEmi: loanData?.monthlyEmi
                     });
                 } else {
-                    console.log("Fetching all loans to aggregate global EMI schedule");
                     const loansResponse = await api.get('/loans');
                     const loansData = loansResponse.data?.loans || loansResponse.data?.data || loansResponse.data;
                     const loansList = Array.isArray(loansData) ? loansData : [];
@@ -108,7 +103,6 @@ const EmiSchedulePage = () => {
                     setLoan(null);
                 }
 
-                console.log("Installments", installmentsArray);
                 setSchedule(installmentsArray.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate) || (a.emiNumber || 0) - (b.emiNumber || 0)));
                 setError(null);
             } catch (err) {
@@ -141,7 +135,6 @@ const EmiSchedulePage = () => {
             result = result.filter(e => e.status === filterStatus);
         }
 
-        // Simple mock for Date Range (for UI purposes)
         if (dateRange) {
             const currentMonth = new Date().getMonth();
             if (dateRange === 'This Month') {

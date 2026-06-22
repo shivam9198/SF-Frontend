@@ -5,7 +5,6 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import { loanService } from '../../services/api/loanService';
-import { customerService } from '../../services/api/customerService';
 import api from '../../services/api/axios';
 import { formatName } from '../../utils/format';
 

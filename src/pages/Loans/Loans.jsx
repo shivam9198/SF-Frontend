@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiSearch, FiChevronRight, FiFilter, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiChevronRight, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import Table from '../../components/common/Table';

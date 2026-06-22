@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { FiArrowLeft, FiCheckCircle, FiXCircle, FiClock, FiAlertCircle, FiX, FiCreditCard } from 'react-icons/fi';
-import Badge from '../../components/common/Badge';
+import { FiArrowLeft, FiCheckCircle, FiXCircle, FiClock, FiAlertCircle } from 'react-icons/fi';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
-import Button from '../../components/common/Button';
-import Select from '../../components/common/Select';
 import api from '../../services/api/axios';
 import { formatCurrency, formatDate, formatName, formatPaidDate } from '../../utils/format';
 
@@ -234,13 +231,6 @@ const EmiSchedulePage = () => {
                                         rowClass = "bg-red-50/50 hover:bg-red-50/80 dark:bg-red-900/10 dark:hover:bg-red-900/20";
                                     }
 
-                                    // Badge variants
-                                    let badgeVariant = "primary";
-                                    if (row.status === 'Paid') badgeVariant = "success";
-                                    else if (row.status === 'Overdue') badgeVariant = "danger"; // Use danger for red, or warning for yellow/orange
-                                    else if (row.status === 'Pending') badgeVariant = "warning"; // Warning mapped to yellow
-                                    
-                                    // Override specific colors since Badge variants might not map perfectly to Red/Yellow
                                     const customBadgeClass = 
                                         row.status === 'Paid' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
                                         row.status === 'Pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :

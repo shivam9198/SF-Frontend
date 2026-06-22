@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiSearch, FiX, FiCheckCircle, FiXCircle, FiCreditCard, FiCalendar, FiDollarSign } from 'react-icons/fi';
+import { FiArrowLeft, FiSearch, FiX, FiCheckCircle, FiXCircle, FiCreditCard, FiCalendar } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Loader from '../../components/common/Loader';
-import { customerService } from '../../services/api/customerService';
-import { loanService } from '../../services/api/loanService';
-import { paymentService } from '../../services/api/paymentService';
 import api from '../../services/api/axios';
 import { formatName } from '../../utils/format';
 

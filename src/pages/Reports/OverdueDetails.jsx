@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiPhoneCall, FiMessageSquare, FiCalendar, FiDollarSign, FiClock, FiCheckCircle, FiFileText } from 'react-icons/fi';
+import { FiArrowLeft, FiPhoneCall, FiMessageSquare, FiDollarSign, FiClock, FiFileText } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';

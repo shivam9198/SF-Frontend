@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FiPlus, FiDownload, FiSearch, FiMoreVertical, FiEye, FiEdit2, FiTrash2, FiUsers, FiUserCheck, FiAlertCircle, FiUserPlus, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiPlus, FiDownload, FiEye, FiEdit2, FiTrash2, FiUsers, FiUserCheck, FiAlertCircle, FiUserPlus, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
@@ -35,7 +35,6 @@ const CustomersPage = () => {
     const [customerToDelete, setCustomerToDelete] = useState(null);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
-    const [isClosing, setIsClosing] = useState(false);
 
     const showToast = (type, message) => {
         setToast({ type, message });
@@ -106,10 +105,6 @@ const CustomersPage = () => {
                 };
             });
 
-            console.log("Customers", rawCustomers);
-            console.log("Loans", rawLoans);
-            console.log("Matched Customers", processedCustomers);
-
             setCustomers(processedCustomers);
             setError(null);
         } catch (err) {
@@ -152,7 +147,6 @@ const CustomersPage = () => {
         const active = customers.filter(c => (c.status || 'New') === 'Active').length;
         const overdue = customers.filter(c => (c.status || 'New') === 'Overdue').length;
 
-        // Simple mock logic for "New This Month" based on dates (assuming current month)
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         const newThisMonth = customers.filter(c => {
@@ -315,7 +309,6 @@ const CustomersPage = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10"
                         />
-                        {/* Fake search icon overlay for now, usually would be inside Input */}
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <Select
@@ -425,10 +418,8 @@ const CustomersPage = () => {
                         </div>
                         <div className="flex justify-end gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
                             <Button variant="ghost" onClick={() => {
-                                setIsClosing(true);
                                 setTimeout(() => {
                                     setDeleteModalOpen(false);
-                                    setIsClosing(false);
                                     setCustomerToDelete(null);
                                 }, 250);
                             }}>Cancel</Button>

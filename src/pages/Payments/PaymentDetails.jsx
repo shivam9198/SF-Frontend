@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { FiArrowLeft, FiPrinter, FiDownload, FiShare2, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiPrinter, FiShare2, FiCheckCircle } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 import Loader from '../../components/common/Loader';
 import ErrorState from '../../components/common/ErrorState';
@@ -35,8 +35,7 @@ const PaymentDetailsPage = () => {
                             const loanData = loanRes.data?.loan || loanRes.data;
                             setLoan(loanData);
                         } catch (err) {
-                            console.warn("Failed to fetch full loan details", err);
-                            // Fallback minimal loan info from statePayment
+                            console.error("Failed to fetch full loan details", err);
                             setLoan({
                                 customerId: 'N/A',
                                 phone: statePayment.customerPhone || 'N/A',
@@ -47,7 +46,6 @@ const PaymentDetailsPage = () => {
                     }
                     setError(null);
                 } else {
-                    // Fallback if accessed directly without state (e.g. page refresh)
                     setError('Payment details not found. Please access this page from the Payments list.');
                 }
             } catch (err) {

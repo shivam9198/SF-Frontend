@@ -55,7 +55,6 @@ function DashboardPage() {
     }, [])
 
     const handleKpiClick = (metric) => {
-        console.log('KPI Clicked:', metric.key);
         if (metric.key === 'collection') {
             setAuditTitle("Today's Collection Audit")
             setAuditFilterMode('today')
