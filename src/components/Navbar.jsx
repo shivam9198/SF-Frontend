@@ -45,7 +45,7 @@ function Navbar({ onMenuClick }) {
                     <button
                         type="button"
                         onClick={toggleTheme}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        className="hidden lg:inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     >
                         {theme === 'dark' ? <MdLightMode size={20} /> : <MdDarkMode size={20} />}
                     </button>
@@ -53,7 +53,7 @@ function Navbar({ onMenuClick }) {
                     <button
                         type="button"
                         onClick={() => navigate('/overdue')}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        className="hidden sm:inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                         title="View overdue reminders"
                     >
                         <MdNotifications size={22} />

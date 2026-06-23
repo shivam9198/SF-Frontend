@@ -236,7 +236,7 @@ const AddCustomerPage = () => {
     };
 
     return (
-        <div className="relative min-h-[calc(100vh-8rem)] pb-24">
+        <div className="pb-8">
             {/* Header */}
             <div className="mb-6 flex items-center gap-4">
                 <button 
@@ -447,36 +447,38 @@ const AddCustomerPage = () => {
                     </div>
                 </div>
 
-                {/* Sticky Action Bar */}
-                <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-slate-200/80 bg-white/80 p-4 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/80 md:pl-64">
-                    <div className="mx-auto flex max-w-6xl items-center justify-end gap-3 sm:gap-4">
-                        <Button 
-                            type="button" 
-                            variant="ghost" 
-                            onClick={handleReset}
-                            className="text-slate-600 dark:text-slate-300 w-full sm:w-auto"
-                        >
-                            Reset Form
-                        </Button>
-                        <Button 
-                            type="button" 
-                            variant="secondary" 
-                            onClick={() => {
-                                if (!hasUnsavedChanges || window.confirm('Discard unsaved changes?')) {
-                                    navigate('/customers');
-                                }
-                            }}
-                            className="w-full sm:w-auto"
-                        >
-                            Cancel
-                        </Button>
-                        <Button 
-                            type="submit" 
-                            disabled={isSubmitting}
-                            className="w-full sm:w-auto min-w-[140px] flex justify-center items-center gap-2"
-                        >
-                            {isSubmitting ? 'Saving...' : <><FiSave /> Save Customer</>}
-                        </Button>
+                {/* Action Bar */}
+                <div className="mt-8">
+                    <div className="mx-auto flex max-w-6xl flex-col gap-3">
+                        <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                            <Button 
+                                type="button" 
+                                variant="ghost" 
+                                onClick={handleReset}
+                                className="w-full text-slate-600 dark:text-slate-300 sm:w-auto"
+                            >
+                                Reset
+                            </Button>
+                            <Button 
+                                type="button" 
+                                variant="secondary" 
+                                onClick={() => {
+                                    if (!hasUnsavedChanges || window.confirm('Discard unsaved changes?')) {
+                                        navigate('/customers');
+                                    }
+                                }}
+                                className="w-full sm:w-auto"
+                            >
+                                Cancel
+                            </Button>
+                             <Button 
+                                type="submit" 
+                                disabled={isSubmitting}
+                                className="flex w-full items-center justify-center gap-2 sm:w-auto"
+                            >
+                                {isSubmitting ? 'Saving...' : <><FiSave /> Save Customer</>}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </form>

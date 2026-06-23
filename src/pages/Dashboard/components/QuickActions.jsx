@@ -22,12 +22,15 @@ function QuickActions({ actions }) {
 
     return (
         <Card>
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Quick Actions</p>
                     <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Common tasks that help move the business forward.</p>
                 </div>
-                <Button variant="secondary" onClick={() => navigate('/customers')}>View Customers</Button>
+                <Button variant="secondary" onClick={() => navigate('/customers')}>
+                    <span className="hidden sm:inline">View Customers</span>
+                    <span className="sm:hidden">View All</span>
+                </Button>
             </div>
             <div className="mt-6 grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {visibleActions.map((action) => {

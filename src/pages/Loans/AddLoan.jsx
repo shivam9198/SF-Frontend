@@ -245,7 +245,7 @@ const AddLoanPage = () => {
     const remainingAmount = Number(formData.price || 0) + Number(formData.loginCharge || 0) - Number(formData.downPayment || 0);
 
     return (
-        <div className="relative min-h-[calc(100vh-8rem)] pb-24">
+        <div className="pb-8">
             {/* Header */}
             <div className="mb-6 flex items-center gap-4">
                 <button
@@ -466,22 +466,24 @@ const AddLoanPage = () => {
                     </div>
                 </div>
 
-                {/* Sticky Action Bar */}
-                <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-slate-200/80 bg-white/80 p-4 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/80 md:pl-64">
-                    <div className="mx-auto flex flex-wrap sm:flex-nowrap items-center justify-end gap-3 sm:gap-4">
-                        <Button type="button" variant="ghost" onClick={handleReset} className="w-full sm:w-auto text-slate-600 dark:text-slate-300">
-                            Reset
-                        </Button>
-                        <Button type="button" variant="secondary" onClick={() => navigate(-1)} className="w-full sm:w-auto">
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting || monthlyEmi <= 0}
-                            className="w-full sm:w-auto min-w-[140px] flex justify-center items-center gap-2"
-                        >
-                            {isSubmitting ? 'Saving...' : <><FiSave /> Create Loan</>}
-                        </Button>
+                {/* Action Bar */}
+                <div className="mt-8">
+                    <div className="mx-auto flex max-w-7xl flex-col gap-3">
+                        <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                            <Button type="button" variant="ghost" onClick={handleReset} className="w-full text-slate-600 dark:text-slate-300 sm:w-auto">
+                                Reset
+                            </Button>
+                            <Button type="button" variant="secondary" onClick={() => navigate(-1)} className="w-full sm:w-auto">
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting || monthlyEmi <= 0}
+                                className="flex w-full items-center justify-center gap-2 sm:w-auto"
+                            >
+                                {isSubmitting ? 'Saving...' : <><FiSave /> Create Loan</>}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </form>

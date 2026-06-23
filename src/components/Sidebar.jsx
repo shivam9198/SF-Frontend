@@ -1,13 +1,15 @@
 import { useContext } from 'react'
 import { NavLink } from 'react-router-dom'
 import { navItems } from '../constants/navItems'
-import { MdClose } from 'react-icons/md'
+import { MdClose, MdDarkMode, MdLightMode } from 'react-icons/md'
 import { classNames } from '../utils/classNames'
 import { AuthContext } from '../context/AuthContext'
 import Logo from './common/Logo'
+import { ThemeContext } from '../context/ThemeContext'
 
 function Sidebar({ open, onClose }) {
     const { user } = useContext(AuthContext)
+    const { theme, toggleTheme } = useContext(ThemeContext)
     const visibleItems = navItems.filter((item) => !item.adminOnly || user?.role?.toLowerCase() === 'admin')
 
     return (
@@ -73,6 +75,24 @@ function Sidebar({ open, onClose }) {
                         })}
                     </div>
                 </nav>
+
+                <div className="px-1 lg:hidden">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            toggleTheme()
+                            onClose()
+                        }}
+                        className="group flex w-full items-center gap-3 rounded-3xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                    >
+                        {theme === 'dark' ? (
+                            <MdLightMode className="h-5 w-5 shrink-0" />
+                        ) : (
+                            <MdDarkMode className="h-5 w-5 shrink-0" />
+                        )}
+                        <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                    </button>
+                </div>
             </aside>
         </>
     )

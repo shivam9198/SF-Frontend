@@ -93,12 +93,12 @@ function DashboardPage() {
                             <MdWavingHand size={18} className="text-amber-500 origin-bottom-right animate-[wave_2s_ease-in-out_infinite]" /> 
                             <span className="text-sm font-semibold tracking-wide">Welcome back</span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-3">{greeting}</h1>
-                        <p className="mt-2 text-slate-600 dark:text-slate-300 max-w-lg text-sm sm:text-base leading-relaxed">
+                        <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-3">{greeting}</h1>
+                        <p className="mt-2 text-slate-600 dark:text-slate-300 max-w-lg text-xs sm:text-sm leading-relaxed">
                             Here is a quick overview of your finance business. You have successfully collected <strong className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md font-bold border border-emerald-200 dark:border-emerald-800/50">{formatCurrency(todayCollection)}</strong> today.
                         </p>
                     </div>
-                    <div className="bg-white dark:bg-slate-800/80 rounded-2xl p-5 text-center md:text-right border border-slate-100 dark:border-slate-700 shadow-sm min-w-[160px]">
+                    <div className="bg-white dark:bg-slate-800/80 rounded-2xl p-4 text-center md:text-right border border-slate-100 dark:border-slate-700 shadow-sm min-w-[160px]">
                         <p className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 font-bold mb-2">Today's Date</p>
                         <p className="text-xl font-bold text-slate-900 dark:text-white">{today}</p>
                     </div>

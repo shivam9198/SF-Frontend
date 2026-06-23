@@ -192,16 +192,16 @@ const EmiSchedulePage = () => {
             label: 'Actions',
             render: (r) => (
                 <div className="flex items-center gap-2">
-                    <button className="p-1.5 text-slate-400 hover:text-sky-600 transition" title="View Details">
+                    <button onClick={() => navigate(`/loans/${r.rawLoanId}`)} className="p-1.5 text-slate-400 hover:text-sky-600 transition" title="View Details">
                         <FiEye size={18} />
                     </button>
-                    {r.status !== 'Paid' && (
-                        <button className="p-1.5 text-slate-400 hover:text-emerald-600 transition" title="Record Payment">
+                    {loanId && r.status !== 'Paid' && (
+                        <button onClick={() => navigate('/payments/new')} className="p-1.5 text-slate-400 hover:text-emerald-600 transition" title="Record Payment">
                             <FiCreditCard size={18} />
                         </button>
                     )}
                     {r.status === 'Paid' && (
-                        <button className="p-1.5 text-slate-400 hover:text-purple-600 transition" title="Download Receipt">
+                        <button onClick={() => handleViewReceipt(r)} className="p-1.5 text-slate-400 hover:text-purple-600 transition" title="Download Receipt">
                             <FiDownload size={18} />
                         </button>
                     )}
@@ -210,17 +210,38 @@ const EmiSchedulePage = () => {
         }
     ];
 
+    const handleViewReceipt = (emi) => {
+        const payment = {
+            id: `PAY-${String(emi._id).slice(-6).toUpperCase()}`,
+            rawId: emi._id,
+            loanId: emi.loanId,
+            rawLoanId: emi.rawLoanId,
+            customerName: emi.customerName,
+            amount: emi.amount,
+            paymentMethod: emi.paymentMethod || 'N/A',
+            paidOn: emi.paidOn,
+            paymentDate: emi.paidOn,
+            emiNumber: emi.emiNumber,
+            referenceNumber: emi.referenceNumber || 'N/A',
+            collectedBy: emi.collectedBy || 'N/A',
+            notes: emi.notes || ''
+        };
+        navigate(`/payments/${payment.id}`, { state: { payment } });
+    };
+
     return (
         <div className="space-y-6 pb-12">
             {/* Header Section */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate(`/loans/${loanId}`)}
-                        className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                    >
-                        <FiArrowLeft size={20} />
-                    </button>
+                    {loanId && (
+                        <button
+                            onClick={() => navigate(`/loans/${loanId}`)}
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                        >
+                            <FiArrowLeft size={20} />
+                        </button>
+                    )}
                     <div>
                         <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
                             {loanId ? 'EMI Schedule' : 'Global EMI Schedule'}
@@ -334,12 +355,12 @@ const EmiSchedulePage = () => {
                                                 )}
                                             </div>
                                             <div className="flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
-                                                <Button variant="ghost" className="px-3 py-1">View Details</Button>
-                                                {emi.status !== 'Paid' && (
-                                                    <Button variant="primary" className="px-3 py-1 text-xs">Record Payment</Button>
+                                                <Button onClick={() => navigate(`/loans/${emi.rawLoanId}`)} variant="ghost" className="px-3 py-1">View Details</Button>
+                                                {loanId && emi.status !== 'Paid' && (
+                                                    <Button onClick={() => navigate('/payments/new')} variant="primary" className="px-3 py-1 text-xs">Record Payment</Button>
                                                 )}
                                                 {emi.status === 'Paid' && (
-                                                    <Button variant="secondary" className="px-3 py-1 text-xs gap-1">
+                                                    <Button onClick={() => handleViewReceipt(emi)} variant="secondary" className="px-3 py-1 text-xs gap-1">
                                                         <FiDownload /> Receipt
                                                     </Button>
                                                 )}

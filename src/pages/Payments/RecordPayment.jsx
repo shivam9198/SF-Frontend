@@ -343,7 +343,7 @@ const RecordPaymentPage = () => {
     const remainingBalance = Math.max(0, calculatedOutstanding - Number(formData.amountPaid || 0));
 
     return (
-        <div className="relative min-h-[calc(100vh-8rem)] pb-24">
+        <div className="pb-8">
             {/* Header */}
             <div className="mb-6 flex items-center gap-4">
                 <button
@@ -612,22 +612,24 @@ const RecordPaymentPage = () => {
                     </div>
                 </div>
 
-                {/* Sticky Action Bar */}
-                <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-slate-200/80 bg-white/95 p-4 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/95 md:pl-64">
-                    <div className="mx-auto flex max-w-7xl flex-col-reverse sm:flex-row items-center justify-end gap-3 sm:gap-4">
-                        <Button type="button" variant="ghost" onClick={handleReset} className="w-full sm:w-auto text-slate-600 dark:text-slate-300 text-lg px-6 py-3">
-                            Reset
-                        </Button>
-                        <Button type="button" variant="secondary" onClick={() => navigate(-1)} className="w-full sm:w-auto text-lg px-6 py-3">
-                            Cancel (रद्द करें)
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting || !selectedEmi || Number(formData.amountPaid) <= 0}
-                            className="w-full sm:w-auto sm:min-w-[200px] flex justify-center items-center gap-2 text-xl px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white"
-                        >
-                            {isSubmitting ? 'Processing...' : 'Save (जमा करें)'}
-                        </Button>
+                {/* Action Bar */}
+                <div className="mt-8">
+                    <div className="mx-auto flex max-w-7xl flex-col gap-3">
+                        <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                            <Button type="button" variant="ghost" onClick={handleReset} className="w-full text-slate-600 dark:text-slate-300 sm:w-auto">
+                                Reset
+                            </Button>
+                            <Button type="button" variant="secondary" onClick={() => navigate(-1)} className="w-full sm:w-auto">
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting || !selectedEmi || Number(formData.amountPaid) <= 0}
+                                className="flex w-full items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white sm:w-auto"
+                            >
+                                {isSubmitting ? 'Processing...' : 'Save Payment'}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </form>

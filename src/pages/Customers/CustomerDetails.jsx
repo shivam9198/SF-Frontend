@@ -169,9 +169,9 @@ const CustomerDetailsPage = () => {
             </div>
 
             {isEditing ? (
-                <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
+                <div className="rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
                     <h2 className="mb-6 text-lg font-medium text-slate-900 dark:text-white">Edit Customer Details</h2>
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                         <Input label="Full Name *" id="fullName" value={formData.fullName} onChange={handleChange} />
                         <Input label="Phone Number *" id="phone" value={formData.phone} onChange={handleChange} maxLength={10} />
                         <Input label="Alternate Phone" id="alternatePhone" value={formData.alternatePhone} onChange={handleChange} maxLength={10} />
@@ -196,11 +196,11 @@ const CustomerDetailsPage = () => {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
                     {/* Left Column: Contact & Location Info */}
                     <div className="space-y-6">
                         {/* Contact Info */}
-                        <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
+                        <div className="rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
                             <h2 className="mb-4 flex items-center gap-2 text-lg font-medium text-slate-900 dark:text-white">
                                 <FiPhone className="text-sky-500" /> Contact Details
                             </h2>
@@ -232,7 +232,7 @@ const CustomerDetailsPage = () => {
                     {/* Right Column: KYC & System Info */}
                     <div className="space-y-6">
                         {/* KYC Info */}
-                        <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
+                        <div className="rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
                             <h2 className="mb-4 flex items-center gap-2 text-lg font-medium text-slate-900 dark:text-white">
                                 <FiFileText className="text-emerald-500" /> KYC Information
                             </h2>
@@ -256,7 +256,7 @@ const CustomerDetailsPage = () => {
                         </div>
 
                         {/* System Info */}
-                        <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
+                        <div className="rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
                             <h2 className="mb-4 flex items-center gap-2 text-lg font-medium text-slate-900 dark:text-white">
                                 <FiCalendar className="text-purple-500" /> System Information
                             </h2>

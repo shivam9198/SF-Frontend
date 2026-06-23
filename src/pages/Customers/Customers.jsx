@@ -299,7 +299,7 @@ const CustomersPage = () => {
             </div>
 
             {/* Main Content Area */}
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-soft dark:border-slate-700/90 dark:bg-slate-900 sm:p-6">
                 {/* Search & Filter Bar */}
                 <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end">
                     <div className="flex-1">
@@ -363,26 +363,54 @@ const CustomersPage = () => {
                         {filteredCustomers.map(customer => {
                             const status = customer.status || 'New';
                             return (
-                                <div key={customer._id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-                                    <div className="flex justify-between items-start mb-2">
+                                <div
+                                    key={customer._id}
+                                    onClick={() => navigate(`/customers/${customer._id}`)}
+                                    className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-200 hover:border-sky-500 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:hover:border-sky-500"
+                                >
+                                    <div className="flex items-start justify-between">
                                         <div>
-                                            <h3 className="font-semibold text-slate-900 dark:text-white">{formatName(customer.fullName)}</h3>
-                                            <p className="text-sm text-slate-500">{formatId(customer._id)}</p>
+                                            <h3 className="text-base font-bold text-slate-900 dark:text-white">{formatName(customer.fullName)}</h3>
+                                            <p className="text-xs text-slate-500">{formatId(customer._id)}</p>
                                         </div>
                                         <Badge variant={status === 'Active' ? 'success' : status === 'Overdue' ? 'warning' : 'primary'}>
                                             {status}
                                         </Badge>
                                     </div>
-                                    <div className="text-sm text-slate-600 dark:text-slate-400 mb-4 space-y-1">
-                                        <p>{customer.phone}</p>
-                                        <p>{customer.address?.city || '-'}</p>
-                                        <p>Outstanding: <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(customer.totalOutstanding || 0)}</span></p>
+
+                                    <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                        <div className="text-slate-500">Phone</div>
+                                        <div className="font-medium text-slate-900 dark:text-slate-100">{customer.phone}</div>
+
+                                        <div className="text-slate-500">City</div>
+                                        <div className="font-medium text-slate-900 dark:text-slate-100">{customer.address?.city || '-'}</div>
+
+                                        <div className="text-slate-500">Outstanding</div>
+                                        <div className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(customer.totalOutstanding || 0)}</div>
                                     </div>
-                                    <div className="flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
-                                        <Button variant="ghost" onClick={() => navigate(`/customers/${customer._id}`)} className="px-3 py-1">View</Button>
-                                        <Button variant="ghost" onClick={() => navigate(`/customers/${customer._id}`)} className="px-3 py-1 text-amber-600 hover:bg-amber-50 dark:text-amber-500 dark:hover:bg-amber-900/30">Edit</Button>
+
+                                    <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                                        <Button
+                                            variant="ghost"
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // prevent card click
+                                                navigate(`/customers/${customer._id}`);
+                                            }}
+                                            className="px-4 py-2 text-sm"
+                                        >
+                                            View / Edit
+                                        </Button>
                                         {user?.role === 'admin' && (
-                                            <Button variant="ghost" onClick={() => initiateDelete(customer._id)} className="px-3 py-1 text-red-600 hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-900/30">Delete</Button>
+                                            <Button
+                                                variant="ghost"
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // prevent card click
+                                                    initiateDelete(customer._id)
+                                                }}
+                                                className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-900/30"
+                                            >
+                                                Delete
+                                            </Button>
                                         )}
                                     </div>
                                 </div>
@@ -459,13 +487,13 @@ function StatCard({ title, value, icon, color }) {
     };
 
     return (
-        <div className="flex items-center gap-4 rounded-3xl border border-slate-200/90 bg-white p-5 shadow-soft dark:border-slate-700/90 dark:bg-slate-900">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${colors[color]}`}>
+        <div className="flex items-center gap-4 rounded-3xl border border-slate-200/90 bg-white p-4 shadow-soft dark:border-slate-700/90 dark:bg-slate-900 sm:p-5">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-2xl sm:h-12 sm:w-12 ${colors[color]}`}>
                 {icon}
             </div>
             <div>
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{value}</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{value}</h3>
             </div>
         </div>
     );
