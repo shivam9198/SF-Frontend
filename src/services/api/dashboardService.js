@@ -10,8 +10,7 @@ export const getDashboardData = async () => {
     const loansRes = await api.get('/loans').catch(() => ({ data: [] }));
     const loans = loansRes.data?.loans || loansRes.data?.data || loansRes.data || [];
     const totalLoans = loans.length;
-    const activeLoans = loans.filter(l => l.status === 'Active' || l.status === 'Approved').length;
-
+    
     // 3. Fetch Staff
     let staffCount = 0;
     const staffMap = {};
@@ -93,6 +92,7 @@ export const getDashboardData = async () => {
     const allInstallments = results.flat();
 
     const recentPaymentsList = [];
+    const activeLoanIds = new Set();
 
     allInstallments.forEach(inst => {
         const amt = Number(inst.amount || 0);
@@ -138,11 +138,15 @@ export const getDashboardData = async () => {
         } else if (inst.status === 'Pending') {
             pendingInstallments++;
             totalOutstandingAmount += amt;
+            activeLoanIds.add(inst.rawLoanId);
         } else if (inst.status === 'Overdue') {
             overdueInstallments++;
             totalOutstandingAmount += amt;
+            activeLoanIds.add(inst.rawLoanId);
         }
     });
+
+    const activeLoans = activeLoanIds.size;
 
     // Sort recent payments
     recentPaymentsList.sort((a, b) => new Date(b.date) - new Date(a.date));
